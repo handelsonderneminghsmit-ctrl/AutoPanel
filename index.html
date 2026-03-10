@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoPanel</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0c12;--surface:#11141d;--surface2:#181c28;--surface3:#1b1f2e;
+  --border:#232840;--border2:#2e3450;
+  --text:#eef0f6;--text2:#7a82a0;--text3:#404868;
+  --accent:#e8f03c;--accent-dim:rgba(232,240,60,.1);
+  --green:#3ce890;--red:#e83c6a;--orange:#f0923c;--blue:#3cb4e8;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* ═══════════════════════════════════════
+   VIEWS — toon/verberg
+═══════════════════════════════════════ */
+.view{display:none}
+.view.active{display:flex}
+#view-login{min-height:100vh;align-items:center;justify-content:center;padding:20px;position:relative;overflow:hidden;flex-direction:column}
+#view-admin{flex-direction:column;min-height:100vh}
+#view-app{flex-direction:column;min-height:100vh}
+
+/* ═══════════════════════════════════════
+   BACKGROUND GRID
+═══════════════════════════════════════ */
+.bg-grid{position:fixed;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:48px 48px;opacity:.3;pointer-events:none;z-index:0}
+.bg-glow{position:fixed;top:-15%;left:50%;transform:translateX(-50%);width:700px;height:450px;background:radial-gradient(ellipse,rgba(232,240,60,.05) 0%,transparent 70%);pointer-events:none;z-index:0}
+
+/* ═══════════════════════════════════════
+   LOGIN / REGISTER
+═══════════════════════════════════════ */
+.auth-card{
+  width:100%;max-width:420px;
+  background:var(--surface);border:1px solid var(--border);
+  box-shadow:0 32px 80px rgba(0,0,0,.7);
+  position:relative;z-index:1;
+  animation:cardUp .4s cubic-bezier(.4,0,.2,1);
+}
+@keyframes cardUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+
+.auth-top{padding:32px 32px 0;text-align:center}
+.logo{display:inline-flex;align-items:center;gap:10px;margin-bottom:28px;cursor:pointer}
+.logo-mark{width:36px;height:36px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:800;font-size:13px;color:#000;letter-spacing:-.5px}
+.logo-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:17px;color:var(--text)}
+
+.tabs{display:flex;border-bottom:1px solid var(--border);margin:0 -1px}
+.tab{flex:1;padding:13px 0;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s;text-align:center;user-select:none}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+.auth-body{padding:26px 32px 30px}
+.aform{display:none}.aform.active{display:block;animation:fadeIn .25s}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+.form-title{font-family:'Outfit',sans-serif;font-weight:700;font-size:20px;margin-bottom:4px;letter-spacing:-.3px}
+.form-sub{font-size:13px;color:var(--text2);margin-bottom:22px;line-height:1.5}
+
+.field{margin-bottom:14px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.lbl{display:block;font-size:11.5px;font-weight:500;color:var(--text2);margin-bottom:5px;letter-spacing:.1px}
+.inp{width:100%;background:var(--surface2);border:1px solid var(--border);padding:10px 13px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;border-radius:2px;transition:border-color .15s,-webkit-appearance 0s}
+.inp:focus{border-color:var(--accent)}
+.inp::placeholder{color:var(--text3)}
+.inp.err{border-color:var(--red)}
+select.inp{cursor:pointer;-webkit-appearance:none;appearance:none}
+.pw-wrap{position:relative}
+.pw-wrap .inp{padding-right:42px}
+.eye{position:absolute;right:11px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px;transition:color .15s}
+.eye:hover{color:var(--text2)}
+.field-hint{font-size:11px;color:var(--text3);margin-top:4px}
+.field-err{font-size:11px;color:var(--red);margin-top:4px;display:none}
+.field-err.show{display:block}
+
+.alert{padding:11px 13px;font-size:13px;line-height:1.5;margin-bottom:14px;border-radius:2px;display:none}
+.alert.show{display:block}
+.alert-err{background:rgba(232,60,106,.1);border:1px solid rgba(232,60,106,.25);color:var(--red)}
+.alert-warn{background:rgba(232,240,60,.08);border:1px solid rgba(232,240,60,.2);color:var(--accent)}
+.alert-ok{background:rgba(60,232,144,.1);border:1px solid rgba(60,232,144,.2);color:var(--green)}
+
+.btn-primary{width:100%;padding:12px;background:var(--accent);color:#000;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;border:none;cursor:pointer;border-radius:2px;margin-top:6px;transition:background .15s;letter-spacing:.2px}
+.btn-primary:hover{background:#d4da2e}
+.btn-primary:disabled{background:var(--border);color:var(--text3);cursor:not-allowed}
+
+.pending-box{display:none;text-align:center;padding:12px 0 6px}
+.pending-box.show{display:block;animation:fadeIn .3s}
+.pending-icon{font-size:38px;margin-bottom:10px}
+.pending-title{font-family:'Outfit',sans-serif;font-weight:700;font-size:18px;margin-bottom:7px}
+.pending-text{font-size:13px;color:var(--text2);line-height:1.7}
+
+.auth-foot{padding:12px 32px 18px;border-top:1px solid var(--border);text-align:center;font-size:12px;color:var(--text3)}
+.auth-foot a{color:var(--text2);text-decoration:none;transition:color .15s}
+.auth-foot a:hover{color:var(--accent)}
+
+/* ═══════════════════════════════════════
+   TOPBAR (gedeeld door admin + app)
+═══════════════════════════════════════ */
+.topbar{
+  height:52px;background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 22px;gap:10px;
+  position:sticky;top:0;z-index:100;flex-shrink:0;
+}
+.t-mark{width:28px;height:28px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:800;font-size:11px;color:#000;flex-shrink:0}
+.t-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:14px}
+.t-badge{font-size:9px;font-family:'DM Mono',monospace;padding:2px 7px;letter-spacing:.6px;text-transform:uppercase;border-radius:2px}
+.t-badge-admin{background:rgba(232,60,106,.12);border:1px solid rgba(232,60,106,.2);color:var(--red)}
+.t-badge-app{background:var(--accent-dim);border:1px solid rgba(232,240,60,.2);color:var(--accent)}
+.t-url{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)}
+.t-sp{flex:1}
+.t-user{display:flex;align-items:center;gap:8px}
+.t-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;font-family:'Outfit',sans-serif;flex-shrink:0}
+.t-av-admin{background:var(--red)}
+.t-av-user{background:var(--accent);color:#000}
+.t-uname{font-size:12.5px;font-weight:500}
+.t-out{background:none;border:1px solid var(--border);color:var(--text2);padding:4px 10px;font-size:11.5px;cursor:pointer;font-family:'DM Sans',sans-serif;border-radius:2px;transition:all .15s}
+.t-out:hover{border-color:var(--border2);color:var(--text)}
+
+/* ═══════════════════════════════════════
+   ADMIN PANEL
+═══════════════════════════════════════ */
+.content{padding:22px;max-width:1080px;margin:0 auto;width:100%}
+
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.kpi{background:var(--surface);border:1px solid var(--border);padding:17px 19px;position:relative;overflow:hidden}
+.kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi.ky::after{background:var(--accent)}.kpi.kg::after{background:var(--green)}.kpi.kr::after{background:var(--red)}.kpi.kb::after{background:var(--blue)}
+.kpi-lbl{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;margin-bottom:7px}
+.kpi-val{font-family:'Outfit',sans-serif;font-weight:700;font-size:34px;letter-spacing:-1px;line-height:1}
+.kpi-sub{font-size:11.5px;color:var(--text2);margin-top:5px}
+
+.panel{background:var(--surface);border:1px solid var(--border);margin-bottom:14px}
+.panel-head{padding:13px 17px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.panel-title{font-family:'Outfit',sans-serif;font-weight:700;font-size:14px}
+.panel-meta{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)}
+.panel-scroll{overflow-x:auto}
+
+.search-row{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.sbox{display:flex;align-items:center;gap:7px;background:var(--surface2);border:1px solid var(--border);padding:6px 11px;min-width:185px}
+.sbox input{background:none;border:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;width:100%}
+.sbox input::placeholder{color:var(--text3)}
+.pill{padding:5px 11px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:12px;cursor:pointer;border-radius:20px;transition:all .15s;white-space:nowrap;user-select:none}
+.pill:hover{color:var(--text)}.pill.active{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+
+.ut{width:100%;border-collapse:collapse}
+.ut th{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;color:var(--text3);padding:9px 15px;text-align:left;border-bottom:2px solid var(--border);background:var(--surface2);white-space:nowrap}
+.ut td{padding:12px 15px;font-size:13.5px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle}
+.ut tr:last-child td{border-bottom:none}
+.ut tr:hover td{background:rgba(255,255,255,.015)}
+.td-name{color:var(--text);font-weight:600;font-size:14px}
+.td-co{color:var(--text);font-weight:500}
+.td-mono{font-family:'DM Mono',monospace;font-size:11px;color:var(--text3)}
+
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;font-size:11px;font-weight:600;border-radius:20px;white-space:nowrap}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.badge-p{background:rgba(232,240,60,.1);color:var(--accent);border:1px solid rgba(232,240,60,.2)}.badge-p::before{background:var(--accent)}
+.badge-a{background:rgba(60,232,144,.1);color:var(--green);border:1px solid rgba(60,232,144,.2)}.badge-a::before{background:var(--green)}
+.badge-r{background:rgba(232,60,106,.1);color:var(--red);border:1px solid rgba(232,60,106,.2)}.badge-r::before{background:var(--red)}
+
+.acts{display:flex;gap:5px}
+.b-ok{padding:5px 11px;background:rgba(60,232,144,.1);border:1px solid rgba(60,232,144,.25);color:var(--green);font-size:12px;font-weight:600;cursor:pointer;border-radius:2px;font-family:'DM Sans',sans-serif;transition:all .15s;white-space:nowrap}
+.b-ok:hover{background:rgba(60,232,144,.2)}
+.b-no{padding:5px 11px;background:rgba(232,60,106,.08);border:1px solid rgba(232,60,106,.2);color:var(--red);font-size:12px;font-weight:600;cursor:pointer;border-radius:2px;font-family:'DM Sans',sans-serif;transition:all .15s;white-space:nowrap}
+.b-no:hover{background:rgba(232,60,106,.18)}
+.b-del{padding:5px 8px;background:transparent;border:1px solid var(--border);color:var(--text3);font-size:12px;cursor:pointer;border-radius:2px;transition:all .15s}
+.b-del:hover{border-color:var(--red);color:var(--red)}
+.empty-row{padding:40px 20px;text-align:center;color:var(--text3);font-size:13px}
+
+/* ═══════════════════════════════════════
+   CONFIRM MODAL
+═══════════════════════════════════════ */
+.mback{display:none;position:fixed;inset:0;background:rgba(7,9,15,.88);z-index:500;align-items:center;justify-content:center;padding:20px}
+.mback.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);width:100%;max-width:370px;padding:26px;box-shadow:0 24px 60px rgba(0,0,0,.7);animation:cardUp .2s}
+.m-title{font-family:'Outfit',sans-serif;font-weight:700;font-size:17px;margin-bottom:7px}
+.m-text{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:20px}
+.m-acts{display:flex;gap:7px;justify-content:flex-end}
+.m-cancel{padding:7px 14px;background:transparent;border:1px solid var(--border);color:var(--text2);font-size:13px;cursor:pointer;border-radius:2px;font-family:'DM Sans',sans-serif;transition:all .15s}
+.m-cancel:hover{border-color:var(--border2);color:var(--text)}
+.m-confirm{padding:7px 14px;border:none;font-size:13px;font-weight:600;cursor:pointer;border-radius:2px;font-family:'DM Sans',sans-serif;transition:background .15s}
+
+/* ═══════════════════════════════════════
+   TOAST
+═══════════════════════════════════════ */
+.toast{position:fixed;bottom:22px;right:22px;z-index:999;background:var(--surface);border:1px solid var(--border);padding:11px 16px;font-size:13px;display:flex;align-items:center;gap:9px;box-shadow:0 8px 32px rgba(0,0,0,.5);transform:translateY(70px);opacity:0;transition:all .3s cubic-bezier(.4,0,.2,1);max-width:300px;border-radius:2px}
+.toast.show{transform:translateY(0);opacity:1}
+.t-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* ═══════════════════════════════════════
+   APP SHELL (placeholder voor dashboard)
+═══════════════════════════════════════ */
+.app-content{flex:1;padding:40px 22px;max-width:1080px;margin:0 auto;width:100%}
+.app-welcome{font-family:'Outfit',sans-serif;font-weight:700;font-size:28px;letter-spacing:-.5px;margin-bottom:8px}
+.app-sub{font-size:14px;color:var(--text2);margin-bottom:32px}
+.app-placeholder{
+  background:var(--surface);border:1px solid var(--border);
+  padding:60px 40px;text-align:center;
+}
+.app-placeholder-icon{font-size:48px;margin-bottom:16px}
+.app-placeholder-title{font-family:'Outfit',sans-serif;font-weight:700;font-size:20px;margin-bottom:8px}
+.app-placeholder-text{font-size:14px;color:var(--text2);line-height:1.6}
+
+@media(max-width:768px){
+  .kpi-row{grid-template-columns:repeat(2,1fr)}
+  .content,.app-content{padding:12px}
+  .topbar{padding:0 12px}
+  .t-url{display:none}
+  .ut th:nth-child(4),.ut td:nth-child(4),.ut th:nth-child(5),.ut td:nth-child(5){display:none}
+  .auth-body,.auth-top,.auth-foot{padding-left:18px;padding-right:18px}
+  .field-row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- BG effecten -->
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+
+<!-- ═══════════════════════════════════════
+     VIEW 1: LOGIN / REGISTREREN
+═══════════════════════════════════════ -->
+<div id="view-login" class="view active">
+  <div class="auth-card">
+    <div class="auth-top">
+      <div class="logo"><div class="logo-mark">AP</div><span class="logo-name">AutoPanel</span></div>
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('login')">Inloggen</div>
+        <div class="tab" onclick="switchTab('register')">Aanmelden</div>
+      </div>
+    </div>
+
+    <div class="auth-body">
+
+      <!-- LOGIN -->
+      <div class="aform active" id="aform-login">
+        <div class="form-title">Welkom terug</div>
+        <div class="form-sub">Log in op je AutoPanel account</div>
+
+        <div class="alert alert-err" id="l-err"></div>
+        <div class="alert alert-warn" id="l-pending">⏳ Je account wacht nog op goedkeuring. Je ontvangt een e-mail zodra je toegang hebt.</div>
+        <div class="alert alert-err" id="l-revoked">Je toegang is ingetrokken. Neem contact op via <a href="mailto:info@autopanel.nl" style="color:inherit">info@autopanel.nl</a>.</div>
+
+        <div class="field">
+          <label class="lbl">E-mailadres</label>
+          <input type="email" class="inp" id="l-email" placeholder="jouw@bedrijf.nl" autocomplete="email">
+        </div>
+        <div class="field">
+          <label class="lbl">Wachtwoord</label>
+          <div class="pw-wrap">
+            <input type="password" class="inp" id="l-pwd" placeholder="••••••••" autocomplete="current-password">
+            <button class="eye" onclick="togglePw('l-pwd',this)" tabindex="-1">👁</button>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-bottom:18px">
+          <a href="#" style="font-size:12px;color:var(--text2);text-decoration:none" onclick="forgotPw(event)">Wachtwoord vergeten?</a>
+        </div>
+        <button class="btn-primary" id="l-btn" onclick="doLogin()">Inloggen</button>
+      </div>
+
+      <!-- REGISTER -->
+      <div class="aform" id="aform-register">
+        <div class="form-title">Account aanvragen</div>
+        <div class="form-sub">Na goedkeuring ontvang je toegang via e-mail</div>
+
+        <div class="alert alert-err" id="r-err"></div>
+
+        <div class="pending-box" id="r-pending">
+          <div class="pending-icon">⏳</div>
+          <div class="pending-title">Aanvraag ingediend!</div>
+          <div class="pending-text">Je aanvraag is ontvangen en wordt beoordeeld.<br>Je hoort van ons op <strong id="r-pending-email"></strong>.</div>
+        </div>
+
+        <div id="r-fields">
+          <div class="field-row">
+            <div class="field">
+              <label class="lbl">Voornaam</label>
+              <input type="text" class="inp" id="r-first" placeholder="Jan" autocomplete="given-name">
+              <div class="field-err" id="e-first">Vereist</div>
+            </div>
+            <div class="field">
+              <label class="lbl">Achternaam</label>
+              <input type="text" class="inp" id="r-last" placeholder="de Vries" autocomplete="family-name">
+              <div class="field-err" id="e-last">Vereist</div>
+            </div>
+          </div>
+          <div class="field">
+            <label class="lbl">Bedrijfsnaam</label>
+            <input type="text" class="inp" id="r-company" placeholder="Autobedrijf De Vries">
+            <div class="field-err" id="e-company">Vereist</div>
+          </div>
+          <div class="field">
+            <label class="lbl">Type bedrijf</label>
+            <select class="inp" id="r-type">
+              <option value="">Selecteer type…</option>
+              <option value="dealer">Autodealer</option>
+              <option value="garage">Garagebedrijf</option>
+              <option value="inkoper">Inkoper / handelaar</option>
+              <option value="veiling">Veilingbedrijf</option>
+              <option value="ander">Anders</option>
+            </select>
+            <div class="field-err" id="e-type">Vereist</div>
+          </div>
+          <div class="field">
+            <label class="lbl">E-mailadres</label>
+            <input type="email" class="inp" id="r-email" placeholder="jouw@bedrijf.nl" autocomplete="email">
+            <div class="field-err" id="e-email">Geldig e-mailadres vereist</div>
+          </div>
+          <div class="field">
+            <label class="lbl">Telefoonnummer <span style="color:var(--text3);font-weight:400">(optioneel)</span></label>
+            <input type="tel" class="inp" id="r-phone" placeholder="06 12345678">
+          </div>
+          <div class="field">
+            <label class="lbl">Wachtwoord</label>
+            <div class="pw-wrap">
+              <input type="password" class="inp" id="r-pwd" placeholder="Minimaal 8 tekens" autocomplete="new-password">
+              <button class="eye" onclick="togglePw('r-pwd',this)" tabindex="-1">👁</button>
+            </div>
+            <div class="field-err" id="e-pwd">Minimaal 8 tekens</div>
+          </div>
+          <div class="field">
+            <label class="lbl">Wachtwoord bevestigen</label>
+            <div class="pw-wrap">
+              <input type="password" class="inp" id="r-pwd2" placeholder="Herhaal wachtwoord" autocomplete="new-password">
+              <button class="eye" onclick="togglePw('r-pwd2',this)" tabindex="-1">👁</button>
+            </div>
+            <div class="field-err" id="e-pwd2">Wachtwoorden komen niet overeen</div>
+          </div>
+          <button class="btn-primary" id="r-btn" onclick="doRegister()">Aanvraag indienen</button>
+        </div>
+      </div>
+
+    </div>
+    <div class="auth-foot">autopanel.nl &nbsp;·&nbsp; <a href="mailto:info@autopanel.nl">Contact</a></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     VIEW 2: ADMIN PANEL
+═══════════════════════════════════════ -->
+<div id="view-admin" class="view">
+  <div class="topbar">
+    <div class="t-mark">AP</div>
+    <span class="t-name">AutoPanel</span>
+    <span class="t-badge t-badge-admin">Beheer</span>
+    <span class="t-url">admin.autopanel.nl</span>
+    <div class="t-sp"></div>
+    <div class="t-user">
+      <div class="t-av t-av-admin" id="a-av">A</div>
+      <span class="t-uname" id="a-uname">Beheerder</span>
+      <button class="t-out" onclick="doLogout()">Uitloggen</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="kpi-row" id="kpi-row"></div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">Gebruikersaanvragen</div>
+        <div class="search-row">
+          <div class="sbox">
+            <span style="color:var(--text3)">⌕</span>
+            <input type="text" placeholder="Naam, bedrijf, e-mail…" oninput="filterUsers(this.value)">
+          </div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap">
+            <div class="pill active" onclick="setFilter('alle',this)">Alle</div>
+            <div class="pill" onclick="setFilter('pending',this)">In afwachting</div>
+            <div class="pill" onclick="setFilter('approved',this)">Goedgekeurd</div>
+            <div class="pill" onclick="setFilter('revoked',this)">Ingetrokken</div>
+          </div>
+        </div>
+      </div>
+      <div class="panel-scroll">
+        <table class="ut">
+          <thead><tr><th>Naam</th><th>Bedrijf</th><th>E-mail</th><th>Type</th><th>Aangevraagd</th><th>Status</th><th>Acties</th></tr></thead>
+          <tbody id="utbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">Activiteitslog</div>
+        <div class="panel-meta" id="log-meta"></div>
+      </div>
+      <div class="panel-scroll">
+        <table class="ut">
+          <thead><tr><th>Tijdstip</th><th>Actie</th><th>Gebruiker</th></tr></thead>
+          <tbody id="logtbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     VIEW 3: APP (dashboard)
+═══════════════════════════════════════ -->
+<div id="view-app" class="view">
+  <div class="topbar">
+    <div class="t-mark">AP</div>
+    <span class="t-name">AutoPanel</span>
+    <span class="t-badge t-badge-app">Voorraad</span>
+    <div class="t-sp"></div>
+    <div class="t-user">
+      <div class="t-av t-av-user" id="u-av">U</div>
+      <span class="t-uname" id="u-uname">Gebruiker</span>
+      <button class="t-out" onclick="doLogout()">Uitloggen</button>
+    </div>
+  </div>
+  <div class="app-content">
+    <div class="app-welcome" id="u-welcome">Goedemiddag</div>
+    <div class="app-sub">Je bent ingelogd op AutoPanel.</div>
+    <div class="app-placeholder">
+      <div class="app-placeholder-icon">🚗</div>
+      <div class="app-placeholder-title">Dashboard wordt geladen</div>
+      <div class="app-placeholder-text">Koppel hier het <code>autopanel.html</code> dashboard.<br>Vervang dit blok door de inhoud van het dashboard.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm modal -->
+<div class="mback" id="mback">
+  <div class="modal">
+    <div class="m-title" id="m-title"></div>
+    <div class="m-text"  id="m-text"></div>
+    <div class="m-acts">
+      <button class="m-cancel" onclick="closeModal()">Annuleren</button>
+      <button class="m-confirm" id="m-confirm">Bevestigen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"><div class="t-dot" id="t-dot"></div><span id="t-txt"></span></div>
+
+<script>
+// ═══════════════════════════════════════
+//  SUPABASE CONFIG  ← verander deze twee regels
+// ═══════════════════════════════════════
+const SB_URL = 'https://jouwprojectid.supabase.co';
+const SB_KEY = 'jouw-anon-key';
+
+const { createClient } = supabase;
+const sb = createClient(SB_URL, SB_KEY);
+
+// ═══════════════════════════════════════
+//  VIEW ROUTING
+// ═══════════════════════════════════════
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + id).classList.add('active');
+  // Verberg bg effecten op app/admin (tonen wel op login)
+  document.querySelector('.bg-grid').style.display = id === 'login' ? 'block' : 'none';
+  document.querySelector('.bg-glow').style.display = id === 'login' ? 'block' : 'none';
+}
+
+// ═══════════════════════════════════════
+//  INIT — check sessie bij laden
+// ═══════════════════════════════════════
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    await routeUser(session.user);
+  }
+})();
+
+async function routeUser(user) {
+  const { data: profile } = await sb
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile || profile.status === 'pending') {
+    await sb.auth.signOut();
+    showView('login');
+    document.getElementById('l-pending').classList.add('show');
+    return;
+  }
+  if (profile.status === 'revoked') {
+    await sb.auth.signOut();
+    showView('login');
+    document.getElementById('l-revoked').classList.add('show');
+    return;
+  }
+
+  if (profile.role === 'admin') {
+    // Admin → beheerpaneel
+    const initials = (profile.first_name?.[0] || 'A').toUpperCase();
+    document.getElementById('a-av').textContent = initials;
+    document.getElementById('a-uname').textContent = profile.first_name + ' ' + profile.last_name;
+    showView('admin');
+    await loadAdminData();
+  } else {
+    // Gewone gebruiker → app
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? 'Goedemorgen' : hour < 18 ? 'Goedemiddag' : 'Goedenavond';
+    document.getElementById('u-welcome').textContent = greeting + ', ' + profile.first_name;
+    document.getElementById('u-av').textContent = (profile.first_name?.[0] || 'U').toUpperCase();
+    document.getElementById('u-uname').textContent = profile.first_name + ' ' + profile.last_name;
+    showView('app');
+  }
+}
+
+// ═══════════════════════════════════════
+//  AUTH — INLOGGEN
+// ═══════════════════════════════════════
+async function doLogin() {
+  clearAlerts('l-');
+  const email = document.getElementById('l-email').value.trim();
+  const pwd   = document.getElementById('l-pwd').value;
+
+  if (!email || !pwd) {
+    showAlert('l-err', 'Vul je e-mailadres en wachtwoord in.');
+    return;
+  }
+
+  setBtn('l-btn', true, 'Bezig…');
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: pwd });
+    if (error) throw error;
+    await routeUser(data.user);
+  } catch(e) {
+    showAlert('l-err', 'E-mailadres of wachtwoord is onjuist.');
+  } finally {
+    setBtn('l-btn', false, 'Inloggen');
+  }
+}
+
+// ═══════════════════════════════════════
+//  AUTH — REGISTREREN
+// ═══════════════════════════════════════
+async function doRegister() {
+  clearFieldErrors();
+  hideEl('r-err');
+
+  const first   = v('r-first'), last  = v('r-last');
+  const company = v('r-company'), type = v('r-type');
+  const email   = v('r-email'),  phone = v('r-phone');
+  const pwd     = v('r-pwd'),    pwd2  = v('r-pwd2');
+
+  let ok = true;
+  if (!first)                       { fieldErr('r-first','e-first');   ok=false }
+  if (!last)                        { fieldErr('r-last','e-last');     ok=false }
+  if (!company)                     { fieldErr('r-company','e-company');ok=false }
+  if (!type)                        { fieldErr('r-type','e-type');     ok=false }
+  if (!email || !email.includes('@')){ fieldErr('r-email','e-email');  ok=false }
+  if (pwd.length < 8)               { fieldErr('r-pwd','e-pwd');       ok=false }
+  if (pwd !== pwd2)                 { fieldErr('r-pwd2','e-pwd2');     ok=false }
+  if (!ok) return;
+
+  setBtn('r-btn', true, 'Bezig…');
+  try {
+    const { error } = await sb.auth.signUp({
+      email, password: pwd,
+      options: { data: { first_name:first, last_name:last, company, company_type:type, phone } }
+    });
+    if (error) {
+      if (error.message.includes('already registered')) {
+        showAlert('r-err', 'Dit e-mailadres is al geregistreerd.');
+      } else throw error;
+      return;
+    }
+    // Succes
+    document.getElementById('r-pending-email').textContent = email;
+    document.getElementById('r-fields').style.display = 'none';
+    document.getElementById('r-pending').classList.add('show');
+  } catch(e) {
+    showAlert('r-err', 'Er ging iets mis. Probeer het opnieuw.');
+  } finally {
+    setBtn('r-btn', false, 'Aanvraag indienen');
+  }
+}
+
+// ═══════════════════════════════════════
+//  AUTH — UITLOGGEN
+// ═══════════════════════════════════════
+async function doLogout() {
+  await sb.auth.signOut();
+  clearAlerts('l-');
+  showView('login');
+}
+
+// ═══════════════════════════════════════
+//  WACHTWOORD VERGETEN
+// ═══════════════════════════════════════
+async function forgotPw(e) {
+  e.preventDefault();
+  const email = document.getElementById('l-email').value.trim();
+  if (!email) { showAlert('l-err', 'Vul eerst je e-mailadres in.'); return; }
+  await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/?reset=1' });
+  const el = document.getElementById('l-err');
+  el.className = 'alert alert-ok show';
+  el.textContent = '✓ Controleer je e-mail voor een resetlink.';
+}
+
+// ═══════════════════════════════════════
+//  TAB SWITCH
+// ═══════════════════════════════════════
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach((el,i) =>
+    el.classList.toggle('active', (i===0&&t==='login')||(i===1&&t==='register')));
+  document.getElementById('aform-login').classList.toggle('active', t==='login');
+  document.getElementById('aform-register').classList.toggle('active', t==='register');
+}
+
+// ═══════════════════════════════════════
+//  ADMIN — DATA
+// ═══════════════════════════════════════
+let allUsers = [], filterStatus = 'alle', searchQ = '';
+const typeLabels = {dealer:'Dealer',garage:'Garage',inkoper:'Inkoper',veiling:'Veiling',ander:'Anders'};
+
+async function loadAdminData() {
+  const [{ data: users }, { data: log }] = await Promise.all([
+    sb.from('v_users').select('*').order('aangevraagd_op', { ascending: false }),
+    sb.from('admin_log').select('*').order('aangemaakt_op', { ascending: false }).limit(25)
+  ]);
+  allUsers = users || [];
+  renderKpis();
+  renderUsers();
+  renderLog(log || []);
+}
+
+function renderKpis() {
+  const p = allUsers.filter(u=>u.status==='pending').length;
+  const a = allUsers.filter(u=>u.status==='approved').length;
+  const r = allUsers.filter(u=>u.status==='revoked').length;
+  document.getElementById('kpi-row').innerHTML = `
+    <div class="kpi ky"><div class="kpi-lbl">In afwachting</div><div class="kpi-val">${p}</div><div class="kpi-sub">Wachten op beoordeling</div></div>
+    <div class="kpi kg"><div class="kpi-lbl">Goedgekeurd</div><div class="kpi-val">${a}</div><div class="kpi-sub">Actieve gebruikers</div></div>
+    <div class="kpi kr"><div class="kpi-lbl">Ingetrokken</div><div class="kpi-val">${r}</div><div class="kpi-sub">Geblokkeerd</div></div>
+    <div class="kpi kb"><div class="kpi-lbl">Totaal</div><div class="kpi-val">${allUsers.length}</div><div class="kpi-sub">Alle aanvragen</div></div>`;
+}
+
+function renderUsers() {
+  const list = allUsers.filter(u => {
+    const ms = filterStatus === 'alle' || u.status === filterStatus;
+    const q  = searchQ.toLowerCase();
+    const mt = !q || (u.full_name||'').toLowerCase().includes(q)
+                  || (u.company||'').toLowerCase().includes(q)
+                  || (u.email||'').toLowerCase().includes(q);
+    return ms && mt;
+  });
+
+  const tb = document.getElementById('utbody');
+  if (!list.length) {
+    tb.innerHTML = `<tr><td colspan="7"><div class="empty-row">Geen gebruikers gevonden</div></td></tr>`;
+    return;
+  }
+
+  const bdg = s => {
+    const cls={pending:'badge-p',approved:'badge-a',revoked:'badge-r'};
+    const lbl={pending:'In afwachting',approved:'Goedgekeurd',revoked:'Ingetrokken'};
+    return `<span class="badge ${cls[s]||'badge-p'}">${lbl[s]||s}</span>`;
+  };
+  const fmtDate = d => d ? new Date(d).toLocaleDateString('nl-NL',{day:'2-digit',month:'2-digit',year:'numeric'}) : '—';
+  const esc = s => (s||'').replace(/'/g,"\\'");
+
+  tb.innerHTML = list.map(u => `
+    <tr>
+      <td><span class="td-name">${u.full_name||'—'}</span></td>
+      <td><span class="td-co">${u.company||'—'}</span></td>
+      <td style="font-size:12.5px">${u.email}</td>
+      <td style="font-size:12px;color:var(--text2)">${typeLabels[u.company_type]||'—'}</td>
+      <td><span class="td-mono">${fmtDate(u.aangevraagd_op)}</span></td>
+      <td>${bdg(u.status)}</td>
+      <td><div class="acts">
+        ${u.status!=='approved' ? `<button class="b-ok" onclick="doConfirm('${u.id}','approve','${esc(u.full_name)}')">✓ Goedkeuren</button>` : ''}
+        ${u.status==='approved'  ? `<button class="b-no" onclick="doConfirm('${u.id}','revoke','${esc(u.full_name)}')">✕ Intrekken</button>` : ''}
+        ${u.status==='revoked'   ? `<button class="b-ok" onclick="doConfirm('${u.id}','approve','${esc(u.full_name)}')">↺ Herstellen</button>` : ''}
+        <button class="b-del" onclick="doConfirm('${u.id}','delete','${esc(u.full_name)}')">🗑</button>
+      </div></td>
+    </tr>`).join('');
+}
+
+function renderLog(log) {
+  document.getElementById('log-meta').textContent = log.length + ' acties';
+  const colors = {Goedgekeurd:'var(--green)',Ingetrokken:'var(--red)',Verwijderd:'var(--orange)'};
+  document.getElementById('logtbody').innerHTML = log.map(l => `
+    <tr>
+      <td class="td-mono">${new Date(l.aangemaakt_op).toLocaleString('nl-NL',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+      <td><span style="font-weight:600;color:${colors[l.actie]||'var(--text)'}">${l.actie}</span></td>
+      <td>${l.doel_naam||'—'}</td>
+    </tr>`).join('') || `<tr><td colspan="3"><div class="empty-row">Nog geen acties</div></td></tr>`;
+}
+
+function filterUsers(q) { searchQ = q; renderUsers(); }
+function setFilter(s, el) {
+  filterStatus = s;
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderUsers();
+}
+
+// ═══════════════════════════════════════
+//  ADMIN — ACTIES
+// ═══════════════════════════════════════
+let pendingAct = null;
+
+function doConfirm(id, action, name) {
+  const titles = {approve:'Toegang goedkeuren',revoke:'Toegang intrekken',delete:'Gebruiker verwijderen'};
+  const texts  = {
+    approve:`Wil je <strong>${name}</strong> goedkeuren? Ze kunnen direct inloggen.`,
+    revoke: `Wil je de toegang van <strong>${name}</strong> intrekken?`,
+    delete: `Wil je <strong>${name}</strong> definitief verwijderen? Dit is onomkeerbaar.`,
+  };
+  document.getElementById('m-title').textContent = titles[action];
+  document.getElementById('m-text').innerHTML = texts[action];
+  const btn = document.getElementById('m-confirm');
+  btn.textContent = action==='approve'?'Goedkeuren':action==='revoke'?'Intrekken':'Verwijderen';
+  btn.style.background = action==='approve'?'var(--green)':'var(--red)';
+  btn.style.color = action==='approve'?'#000':'#fff';
+  pendingAct = {id, action, name};
+  document.getElementById('mback').classList.add('open');
+}
+
+document.getElementById('m-confirm').addEventListener('click', async () => {
+  if (!pendingAct) return;
+  const {id, action, name} = pendingAct;
+  closeModal();
+
+  try {
+    if (action === 'approve' || action === 'revoke') {
+      const status = action === 'approve' ? 'approved' : 'revoked';
+      await sb.from('profiles').update({ status }).eq('id', id);
+      await sb.from('admin_log').insert({ actie: action==='approve'?'Goedgekeurd':'Ingetrokken', doel_user: id, doel_naam: name });
+      toast(action==='approve' ? `✓ ${name} heeft toegang` : `✕ Toegang ingetrokken`, action==='approve'?'var(--green)':'var(--red)');
+    } else {
+      await sb.from('profiles').delete().eq('id', id);
+      await sb.from('admin_log').insert({ actie: 'Verwijderd', doel_user: null, doel_naam: name });
+      toast(`🗑 ${name} verwijderd`, 'var(--orange)');
+    }
+    await loadAdminData();
+  } catch(e) {
+    toast('Fout: ' + e.message, 'var(--red)');
+  }
+  pendingAct = null;
+});
+
+function closeModal() {
+  document.getElementById('mback').classList.remove('open');
+  pendingAct = null;
+}
+document.getElementById('mback').addEventListener('click', e => { if (e.target===e.currentTarget) closeModal(); });
+
+// ═══════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════
+function v(id) { return document.getElementById(id)?.value.trim() || ''; }
+function setBtn(id, dis, label) { const b=document.getElementById(id); b.disabled=dis; b.textContent=label; }
+function showAlert(id, msg) { const el=document.getElementById(id); el.textContent=msg; el.classList.add('show'); }
+function hideEl(id) { document.getElementById(id)?.classList.remove('show'); }
+function clearAlerts(prefix) {
+  document.querySelectorAll('[id^="'+prefix+'"]').forEach(el => {
+    el.classList.remove('show');
+    if (el.tagName !== 'INPUT') el.className = el.className.replace(/alert-\w+/,'alert');
+  });
+}
+function clearFieldErrors() {
+  document.querySelectorAll('.field-err').forEach(e=>e.classList.remove('show'));
+  document.querySelectorAll('.inp').forEach(e=>e.classList.remove('err'));
+}
+function fieldErr(inpId, errId) {
+  document.getElementById(inpId)?.classList.add('err');
+  document.getElementById(errId)?.classList.add('show');
+}
+function togglePw(id, btn) {
+  const i = document.getElementById(id);
+  const show = i.type==='password';
+  i.type = show ? 'text' : 'password';
+  btn.textContent = show ? '🙈' : '👁';
+}
+function toast(msg, color='var(--green)') {
+  document.getElementById('t-txt').textContent = msg;
+  document.getElementById('t-dot').style.background = color;
+  const el = document.getElementById('toast');
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+// Enter key op loginscherm
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if (!document.getElementById('view-login').classList.contains('active')) return;
+  if (document.getElementById('aform-login').classList.contains('active')) doLogin();
+  else doRegister();
+});
+</script>
+</body>
+</html>
