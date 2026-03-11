@@ -1,56 +1,101 @@
 <!DOCTYPE html>
-<html lang="nl">
+<html lang="nl" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AutoPanel</title>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>AutoPanel — Voorraadbeheer</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
+/* ════════════════════════════════════════════════════
+   RESET & THEMA-VARIABELEN
+════════════════════════════════════════════════════ */
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --bg:#0a0c12;--surface:#11141d;--surface2:#181c28;--surface3:#1b1f2e;
-  --border:#232840;--border2:#2e3450;
-  --text:#eef0f6;--text2:#7a82a0;--text3:#404868;
-  --accent:#e8f03c;--accent-dim:rgba(232,240,60,.1);
-  --green:#3ce890;--red:#e83c6a;--orange:#f0923c;--blue:#3cb4e8;
-}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 
-/* ═══════════════════════════════════════
-   VIEWS — toon/verberg
-═══════════════════════════════════════ */
+[data-theme="dark"]{
+  --bg:#0a0c12;--surface:#11141d;--surface2:#181c28;--surface3:#1e2233;
+  --border:#252a3a;--border2:#313852;
+  --text:#eef0f6;--text2:#7a82a0;--text3:#404868;
+  --shadow:0 4px 24px rgba(0,0,0,.5);--overlay:rgba(8,10,17,.9)
+}
+[data-theme="light"]{
+  --bg:#f1f3f8;--surface:#ffffff;--surface2:#f7f8fc;--surface3:#eef0f6;
+  --border:#dde0ea;--border2:#c8ccd9;
+  --text:#0f1321;--text2:#5c6480;--text3:#9ba3be;
+  --shadow:0 4px 24px rgba(0,0,0,.08);--overlay:rgba(241,243,248,.92)
+}
+[data-theme="blue"]{
+  --bg:#050810;--surface:#090e1e;--surface2:#0f1528;--surface3:#162035;
+  --border:#1c2840;--border2:#283858;
+  --text:#e6eeff;--text2:#6a7cac;--text3:#2e3d60;
+  --shadow:0 4px 24px rgba(0,0,0,.6);--overlay:rgba(5,8,16,.92)
+}
+:root{
+  --accent:#e8f03c;--accent-dim:rgba(232,240,60,.1);
+  --green:#3ce890;--red:#e83c6a;--orange:#f0923c;--blue:#3cb4e8;--teal:#3ce8b4;
+}
+
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);color:var(--text);
+  min-height:100vh;
+  transition:background .25s,color .25s;
+}
+
+/* ════════════════════════════════════════════════════
+   ACHTERGROND EFFECTEN
+════════════════════════════════════════════════════ */
+.bg-grid{
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    linear-gradient(var(--border) 1px,transparent 1px),
+    linear-gradient(90deg,var(--border) 1px,transparent 1px);
+  background-size:48px 48px;opacity:.35;
+}
+.bg-glow{
+  position:fixed;top:-15%;left:50%;transform:translateX(-50%);
+  width:700px;height:450px;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse,rgba(232,240,60,.05) 0%,transparent 70%);
+}
+
+/* ════════════════════════════════════════════════════
+   VIEW SYSTEEM
+════════════════════════════════════════════════════ */
 .view{display:none}
 .view.active{display:flex}
-#view-login{min-height:100vh;align-items:center;justify-content:center;padding:20px;position:relative;overflow:hidden;flex-direction:column}
+#view-login{
+  min-height:100vh;align-items:center;justify-content:center;
+  padding:20px;flex-direction:column;position:relative;overflow:hidden;
+}
 #view-admin{flex-direction:column;min-height:100vh}
-#view-app{position:relative;min-height:100vh}
+#view-app{flex-direction:row;min-height:100vh;position:relative}
 
-/* ═══════════════════════════════════════
-   BACKGROUND GRID
-═══════════════════════════════════════ */
-.bg-grid{position:fixed;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:48px 48px;opacity:.3;pointer-events:none;z-index:0}
-.bg-glow{position:fixed;top:-15%;left:50%;transform:translateX(-50%);width:700px;height:450px;background:radial-gradient(ellipse,rgba(232,240,60,.05) 0%,transparent 70%);pointer-events:none;z-index:0}
-
-/* ═══════════════════════════════════════
-   LOGIN / REGISTER
-═══════════════════════════════════════ */
+/* ════════════════════════════════════════════════════
+   LOGIN / REGISTREER KAART
+════════════════════════════════════════════════════ */
 .auth-card{
-  width:100%;max-width:420px;
+  width:100%;max-width:420px;position:relative;z-index:1;
   background:var(--surface);border:1px solid var(--border);
   box-shadow:0 32px 80px rgba(0,0,0,.7);
-  position:relative;z-index:1;
-  animation:cardUp .4s cubic-bezier(.4,0,.2,1);
+  animation:slideUp .4s cubic-bezier(.4,0,.2,1) both;
 }
-@keyframes cardUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
 
 .auth-top{padding:32px 32px 0;text-align:center}
-.logo{display:inline-flex;align-items:center;gap:10px;margin-bottom:28px;cursor:pointer}
-.logo-mark{width:36px;height:36px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:800;font-size:13px;color:#000;letter-spacing:-.5px}
-.logo-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:17px;color:var(--text)}
+.auth-logo{display:inline-flex;align-items:center;gap:10px;margin-bottom:28px}
+.auth-logo-mark{
+  width:36px;height:36px;background:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Outfit',sans-serif;font-weight:800;font-size:13px;color:#000;
+}
+.auth-logo-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:17px;color:var(--text)}
 
 .tabs{display:flex;border-bottom:1px solid var(--border);margin:0 -1px}
-.tab{flex:1;padding:13px 0;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s;text-align:center;user-select:none}
+.tab{
+  flex:1;padding:13px 0;font-size:13px;font-weight:500;color:var(--text2);
+  cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;
+  transition:all .2s;text-align:center;user-select:none;
+}
 .tab:hover{color:var(--text)}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
 
@@ -64,15 +109,25 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .field{margin-bottom:14px}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .lbl{display:block;font-size:11.5px;font-weight:500;color:var(--text2);margin-bottom:5px;letter-spacing:.1px}
-.inp{width:100%;background:var(--surface2);border:1px solid var(--border);padding:10px 13px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;border-radius:2px;transition:border-color .15s,-webkit-appearance 0s}
+.inp{
+  width:100%;background:var(--surface2);border:1px solid var(--border);
+  padding:10px 13px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;
+  outline:none;transition:border-color .15s;border-radius:2px;
+}
 .inp:focus{border-color:var(--accent)}
 .inp::placeholder{color:var(--text3)}
 .inp.err{border-color:var(--red)}
 select.inp{cursor:pointer;-webkit-appearance:none;appearance:none}
+
 .pw-wrap{position:relative}
 .pw-wrap .inp{padding-right:42px}
-.eye{position:absolute;right:11px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px;transition:color .15s}
+.eye{
+  position:absolute;right:11px;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px;
+  transition:color .15s;
+}
 .eye:hover{color:var(--text2)}
+
 .field-hint{font-size:11px;color:var(--text3);margin-top:4px}
 .field-err{font-size:11px;color:var(--red);margin-top:4px;display:none}
 .field-err.show{display:block}
@@ -83,9 +138,14 @@ select.inp{cursor:pointer;-webkit-appearance:none;appearance:none}
 .alert-warn{background:rgba(232,240,60,.08);border:1px solid rgba(232,240,60,.2);color:var(--accent)}
 .alert-ok{background:rgba(60,232,144,.1);border:1px solid rgba(60,232,144,.2);color:var(--green)}
 
-.btn-primary{width:100%;padding:12px;background:var(--accent);color:#000;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;border:none;cursor:pointer;border-radius:2px;margin-top:6px;transition:background .15s;letter-spacing:.2px}
-.btn-primary:hover{background:#d4da2e}
-.btn-primary:disabled{background:var(--border);color:var(--text3);cursor:not-allowed}
+.btn-auth{
+  width:100%;padding:12px;background:var(--accent);color:#000;
+  font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;
+  border:none;cursor:pointer;border-radius:2px;margin-top:6px;
+  transition:background .15s;letter-spacing:.2px;
+}
+.btn-auth:hover{background:#d4da2e}
+.btn-auth:disabled{background:var(--border);color:var(--text3);cursor:not-allowed}
 
 .pending-box{display:none;text-align:center;padding:12px 0 6px}
 .pending-box.show{display:block;animation:fadeIn .3s}
@@ -93,75 +153,107 @@ select.inp{cursor:pointer;-webkit-appearance:none;appearance:none}
 .pending-title{font-family:'Outfit',sans-serif;font-weight:700;font-size:18px;margin-bottom:7px}
 .pending-text{font-size:13px;color:var(--text2);line-height:1.7}
 
-.auth-foot{padding:12px 32px 18px;border-top:1px solid var(--border);text-align:center;font-size:12px;color:var(--text3)}
+.auth-foot{
+  padding:12px 32px 18px;border-top:1px solid var(--border);
+  text-align:center;font-size:12px;color:var(--text3);
+}
 .auth-foot a{color:var(--text2);text-decoration:none;transition:color .15s}
 .auth-foot a:hover{color:var(--accent)}
 
-/* ═══════════════════════════════════════
-   TOPBAR (gedeeld door admin + app)
-═══════════════════════════════════════ */
+/* ════════════════════════════════════════════════════
+   GEDEELDE TOPBAR (admin + app)
+════════════════════════════════════════════════════ */
 .topbar{
   height:52px;background:var(--surface);border-bottom:1px solid var(--border);
-  display:flex;align-items:center;padding:0 22px;gap:10px;
+  display:flex;align-items:center;padding:0 20px;gap:10px;
   position:sticky;top:0;z-index:100;flex-shrink:0;
+  transition:background .25s;
 }
-.t-mark{width:28px;height:28px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:800;font-size:11px;color:#000;flex-shrink:0}
+.t-mark{
+  width:28px;height:28px;background:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Outfit',sans-serif;font-weight:800;font-size:11px;color:#000;flex-shrink:0;
+}
 .t-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:14px}
-.t-badge{font-size:9px;font-family:'DM Mono',monospace;padding:2px 7px;letter-spacing:.6px;text-transform:uppercase;border-radius:2px}
+.t-badge{
+  font-size:9px;font-family:'DM Mono',monospace;
+  padding:2px 7px;letter-spacing:.6px;text-transform:uppercase;border-radius:2px;
+}
 .t-badge-admin{background:rgba(232,60,106,.12);border:1px solid rgba(232,60,106,.2);color:var(--red)}
 .t-badge-app{background:var(--accent-dim);border:1px solid rgba(232,240,60,.2);color:var(--accent)}
-.t-url{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)}
 .t-sp{flex:1}
 .t-user{display:flex;align-items:center;gap:8px}
-.t-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;font-family:'Outfit',sans-serif;flex-shrink:0}
+.t-av{
+  width:28px;height:28px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;color:#fff;font-family:'Outfit',sans-serif;flex-shrink:0;
+}
 .t-av-admin{background:var(--red)}
 .t-av-user{background:var(--accent);color:#000}
-.t-uname{font-size:12.5px;font-weight:500}
-.t-out{background:none;border:1px solid var(--border);color:var(--text2);padding:4px 10px;font-size:11.5px;cursor:pointer;font-family:'DM Sans',sans-serif;border-radius:2px;transition:all .15s}
+.t-uname{font-size:12.5px;font-weight:500;color:var(--text)}
+.t-out{
+  background:none;border:1px solid var(--border);color:var(--text2);
+  padding:4px 10px;font-size:11.5px;cursor:pointer;font-family:'DM Sans',sans-serif;
+  border-radius:2px;transition:all .15s;
+}
 .t-out:hover{border-color:var(--border2);color:var(--text)}
 
-/* ═══════════════════════════════════════
-   ADMIN PANEL
-═══════════════════════════════════════ */
-.content{padding:22px;max-width:1080px;margin:0 auto;width:100%}
+/* ════════════════════════════════════════════════════
+   ADMIN PANEEL
+════════════════════════════════════════════════════ */
+.admin-content{padding:22px;max-width:1100px;margin:0 auto;width:100%}
 
 .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
 .kpi{background:var(--surface);border:1px solid var(--border);padding:17px 19px;position:relative;overflow:hidden}
 .kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:2px}
-.kpi.ky::after{background:var(--accent)}.kpi.kg::after{background:var(--green)}.kpi.kr::after{background:var(--red)}.kpi.kb::after{background:var(--blue)}
+.kpi.ky::after{background:var(--accent)}.kpi.kg::after{background:var(--green)}
+.kpi.kr::after{background:var(--red)}.kpi.kb::after{background:var(--blue)}
 .kpi-lbl{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;margin-bottom:7px}
-.kpi-val{font-family:'Outfit',sans-serif;font-weight:700;font-size:34px;letter-spacing:-1px;line-height:1}
+.kpi-val{font-family:'Outfit',sans-serif;font-weight:700;font-size:34px;letter-spacing:-1px;line-height:1;color:var(--text)}
 .kpi-sub{font-size:11.5px;color:var(--text2);margin-top:5px}
 
-.panel{background:var(--surface);border:1px solid var(--border);margin-bottom:14px}
-.panel-head{padding:13px 17px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.panel-title{font-family:'Outfit',sans-serif;font-weight:700;font-size:14px}
-.panel-meta{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)}
-.panel-scroll{overflow-x:auto}
+.a-panel{background:var(--surface);border:1px solid var(--border);margin-bottom:14px}
+.a-panel-head{
+  padding:13px 17px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+}
+.a-panel-title{font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;color:var(--text)}
+.a-panel-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 
 .search-row{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
 .sbox{display:flex;align-items:center;gap:7px;background:var(--surface2);border:1px solid var(--border);padding:6px 11px;min-width:185px}
 .sbox input{background:none;border:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;width:100%}
 .sbox input::placeholder{color:var(--text3)}
-.pill{padding:5px 11px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:12px;cursor:pointer;border-radius:20px;transition:all .15s;white-space:nowrap;user-select:none}
+.pill{
+  padding:5px 11px;border:1px solid var(--border);background:var(--surface2);
+  color:var(--text2);font-size:12px;cursor:pointer;border-radius:20px;
+  transition:all .15s;white-space:nowrap;user-select:none;
+}
 .pill:hover{color:var(--text)}.pill.active{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
 
 .ut{width:100%;border-collapse:collapse}
-.ut th{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;color:var(--text3);padding:9px 15px;text-align:left;border-bottom:2px solid var(--border);background:var(--surface2);white-space:nowrap}
-.ut td{padding:12px 15px;font-size:13.5px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle}
+.ut th{
+  font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;
+  color:var(--text3);padding:9px 15px;text-align:left;
+  border-bottom:2px solid var(--border);background:var(--surface2);white-space:nowrap;
+}
+.ut td{
+  padding:12px 15px;font-size:13.5px;border-bottom:1px solid var(--border);
+  color:var(--text2);vertical-align:middle;
+}
 .ut tr:last-child td{border-bottom:none}
-.ut tr:hover td{background:rgba(255,255,255,.015)}
+.ut tr:hover td{background:rgba(255,255,255,.018)}
 .td-name{color:var(--text);font-weight:600;font-size:14px}
 .td-co{color:var(--text);font-weight:500}
 .td-mono{font-family:'DM Mono',monospace;font-size:11px;color:var(--text3)}
 
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;font-size:11px;font-weight:600;border-radius:20px;white-space:nowrap}
-.badge::before{content:'';width:5px;height:5px;border-radius:50%;flex-shrink:0}
-.badge-p{background:rgba(232,240,60,.1);color:var(--accent);border:1px solid rgba(232,240,60,.2)}.badge-p::before{background:var(--accent)}
-.badge-a{background:rgba(60,232,144,.1);color:var(--green);border:1px solid rgba(60,232,144,.2)}.badge-a::before{background:var(--green)}
-.badge-r{background:rgba(232,60,106,.1);color:var(--red);border:1px solid rgba(232,60,106,.2)}.badge-r::before{background:var(--red)}
+.ubadge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;font-size:11px;font-weight:600;border-radius:20px;white-space:nowrap}
+.ubadge::before{content:'';width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.ubadge-p{background:rgba(232,240,60,.1);color:var(--accent);border:1px solid rgba(232,240,60,.2)}.ubadge-p::before{background:var(--accent)}
+.ubadge-a{background:rgba(60,232,144,.1);color:var(--green);border:1px solid rgba(60,232,144,.2)}.ubadge-a::before{background:var(--green)}
+.ubadge-r{background:rgba(232,60,106,.1);color:var(--red);border:1px solid rgba(232,60,106,.2)}.ubadge-r::before{background:var(--red)}
 
-.acts{display:flex;gap:5px}
+.acts{display:flex;gap:5px;flex-wrap:wrap}
 .b-ok{padding:5px 11px;background:rgba(60,232,144,.1);border:1px solid rgba(60,232,144,.25);color:var(--green);font-size:12px;font-weight:600;cursor:pointer;border-radius:2px;font-family:'DM Sans',sans-serif;transition:all .15s;white-space:nowrap}
 .b-ok:hover{background:rgba(60,232,144,.2)}
 .b-no{padding:5px 11px;background:rgba(232,60,106,.08);border:1px solid rgba(232,60,106,.2);color:var(--red);font-size:12px;font-weight:600;cursor:pointer;border-radius:2px;font-family:'DM Sans',sans-serif;transition:all .15s;white-space:nowrap}
@@ -170,131 +262,142 @@ select.inp{cursor:pointer;-webkit-appearance:none;appearance:none}
 .b-del:hover{border-color:var(--red);color:var(--red)}
 .empty-row{padding:40px 20px;text-align:center;color:var(--text3);font-size:13px}
 
-/* ═══════════════════════════════════════
-   CONFIRM MODAL
-═══════════════════════════════════════ */
-.mback{display:none;position:fixed;inset:0;background:rgba(7,9,15,.88);z-index:500;align-items:center;justify-content:center;padding:20px}
-.mback.open{display:flex}
-.modal{background:var(--surface);border:1px solid var(--border);width:100%;max-width:370px;padding:26px;box-shadow:0 24px 60px rgba(0,0,0,.7);animation:cardUp .2s}
-.m-title{font-family:'Outfit',sans-serif;font-weight:700;font-size:17px;margin-bottom:7px}
-.m-text{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:20px}
-.m-acts{display:flex;gap:7px;justify-content:flex-end}
-.m-cancel{padding:7px 14px;background:transparent;border:1px solid var(--border);color:var(--text2);font-size:13px;cursor:pointer;border-radius:2px;font-family:'DM Sans',sans-serif;transition:all .15s}
-.m-cancel:hover{border-color:var(--border2);color:var(--text)}
-.m-confirm{padding:7px 14px;border:none;font-size:13px;font-weight:600;cursor:pointer;border-radius:2px;font-family:'DM Sans',sans-serif;transition:background .15s}
-
-/* ═══════════════════════════════════════
-   TOAST
-═══════════════════════════════════════ */
-.toast{position:fixed;bottom:22px;right:22px;z-index:999;background:var(--surface);border:1px solid var(--border);padding:11px 16px;font-size:13px;display:flex;align-items:center;gap:9px;box-shadow:0 8px 32px rgba(0,0,0,.5);transform:translateY(70px);opacity:0;transition:all .3s cubic-bezier(.4,0,.2,1);max-width:300px;border-radius:2px}
-.toast.show{transform:translateY(0);opacity:1}
-.t-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-
-/* ═══════════════════════════════════════
-   APP SHELL (placeholder voor dashboard)
-═══════════════════════════════════════ */
-.app-content{flex:1;padding:40px 22px;max-width:1080px;margin:0 auto;width:100%}
-.app-welcome{font-family:'Outfit',sans-serif;font-weight:700;font-size:28px;letter-spacing:-.5px;margin-bottom:8px}
-.app-sub{font-size:14px;color:var(--text2);margin-bottom:32px}
-.app-placeholder{
-  background:var(--surface);border:1px solid var(--border);
-  padding:60px 40px;text-align:center;
+/* ════════════════════════════════════════════════════
+   APP — SIDEBAR
+════════════════════════════════════════════════════ */
+.sidebar{
+  width:220px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;flex-shrink:0;
+  position:fixed;top:0;left:0;bottom:0;z-index:200;
+  transition:transform .25s cubic-bezier(.4,0,.2,1),background .25s;
 }
-.app-placeholder-icon{font-size:48px;margin-bottom:16px}
-.app-placeholder-title{font-family:'Outfit',sans-serif;font-weight:700;font-size:20px;margin-bottom:8px}
-.app-placeholder-text{font-size:14px;color:var(--text2);line-height:1.6}
-
-@media(max-width:768px){
-  .kpi-row{grid-template-columns:repeat(2,1fr)}
-  .content,.app-content{padding:12px}
-  .topbar{padding:0 12px}
-  .t-url{display:none}
-  .ut th:nth-child(4),.ut td:nth-child(4),.ut th:nth-child(5),.ut td:nth-child(5){display:none}
-  .auth-body,.auth-top,.auth-foot{padding-left:18px;padding-right:18px}
-  .field-row{grid-template-columns:1fr}
+.sidebar-overlay{
+  display:none;position:fixed;inset:0;background:var(--overlay);z-index:199;
 }
+.sb-logo{
+  padding:18px 20px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.sb-logo-mark{
+  width:32px;height:32px;background:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Outfit',sans-serif;font-weight:800;font-size:12px;color:#000;flex-shrink:0;
+}
+.sb-logo-text{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;letter-spacing:-.3px;line-height:1.2}
+.sb-logo-sub{color:var(--text2);font-weight:400;font-size:10px;display:block;letter-spacing:.5px;text-transform:uppercase;font-family:'DM Mono',monospace}
+.sb-logo-close{margin-left:auto;display:none;background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px}
 
-/* ── Dashboard styles ── */
-<style>
-[data-theme="dark"]{--bg:#0d0f14;--surface:#13161e;--surface2:#1a1e28;--surface3:#212636;--border:#2a2f3f;--border2:#353b50;--text:#eef0f5;--text2:#8a90a8;--text3:#555c78;--shadow:0 4px 24px rgba(0,0,0,.4);--overlay:rgba(13,15,20,.88)}
-[data-theme="light"]{--bg:#f2f3f7;--surface:#fff;--surface2:#f7f8fc;--surface3:#eef0f6;--border:#dde0ea;--border2:#c8ccd9;--text:#111827;--text2:#5c6480;--text3:#9ba3be;--shadow:0 4px 24px rgba(0,0,0,.08);--overlay:rgba(242,243,247,.92)}
-[data-theme="blue"]{--bg:#05080f;--surface:#0a0f1e;--surface2:#111628;--surface3:#182035;--border:#1e2a42;--border2:#2a3a58;--text:#e8eeff;--text2:#7a8cb8;--text3:#3a4a6a;--shadow:0 4px 24px rgba(0,0,0,.5);--overlay:rgba(5,8,15,.9)}
-:root{--accent:#e8f03c;--accent2:#3ce8b4;--accent3:#e83c6a;--green:#3ce890;--orange:#f0923c;--red:#e83c6a}
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;transition:background .3s,color .3s}
-/* SIDEBAR */
-.sidebar{width:220px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;position:fixed;top:0;left:0;bottom:0;z-index:200;transition:transform .25s cubic-bezier(.4,0,.2,1),background .3s}
-.sidebar-overlay{display:none;position:fixed;inset:0;background:var(--overlay);z-index:199}
-.logo{padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
-.logo-mark{width:34px;height:34px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:800;font-size:13px;color:#000;flex-shrink:0;letter-spacing:-.5px}
-.logo-text{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;letter-spacing:-.3px;line-height:1.2}
-.logo-text span{color:var(--text2);font-weight:400;font-size:11px;display:block;letter-spacing:.5px;text-transform:uppercase}
-.logo-close{margin-left:auto;display:none;background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px}
-.nav{flex:1;padding:8px 0;overflow-y:auto}
-.nav-section-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);padding:14px 20px 4px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;font-size:13.5px;font-weight:400;color:var(--text2);cursor:pointer;transition:all .15s;border-left:2px solid transparent;user-select:none}
-.nav-item:hover{color:var(--text);background:var(--surface2)}
-.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(232,240,60,.06);font-weight:500}
-.nav-item .icon{width:16px;text-align:center;font-size:14px;flex-shrink:0}
-.nav-badge{margin-left:auto;background:var(--accent);color:#000;font-family:'DM Mono',monospace;font-size:10px;font-weight:500;padding:1px 6px;border-radius:2px}
-.nav-badge.alert{background:var(--red);color:#fff}
-.sidebar-footer{padding:14px 20px;border-top:1px solid var(--border)}
+.sb-nav{flex:1;padding:8px 0;overflow-y:auto}
+.sb-section{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);padding:14px 20px 4px}
+.sb-item{
+  display:flex;align-items:center;gap:10px;padding:9px 20px;
+  font-size:13.5px;font-weight:400;color:var(--text2);cursor:pointer;
+  transition:all .15s;border-left:2px solid transparent;user-select:none;
+}
+.sb-item:hover{color:var(--text);background:var(--surface2)}
+.sb-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(232,240,60,.05);font-weight:500}
+.sb-item .icon{width:16px;text-align:center;font-size:14px;flex-shrink:0}
+.sb-badge{margin-left:auto;background:var(--accent);color:#000;font-family:'DM Mono',monospace;font-size:10px;padding:1px 6px;border-radius:2px}
+.sb-badge.alert{background:var(--red);color:#fff}
+
+.sb-footer{padding:14px 20px;border-top:1px solid var(--border)}
 .user-chip{display:flex;align-items:center;gap:10px}
-.avatar{width:30px;height:30px;background:var(--surface3);border:1px solid var(--border2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--accent);font-family:'Syne',sans-serif}
-.user-name{font-size:12.5px;font-weight:500}
-.user-role{font-size:11px;color:var(--text3)}
-/* MAIN */
-.main{margin-left:220px;flex:1;min-height:100vh;display:flex;flex-direction:column;min-width:0}
-.topbar{height:54px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:10px;position:sticky;top:0;z-index:50;transition:background .3s}
-.hamburger{display:none;background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px;margin-right:4px}
-.page-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.topbar-actions{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.user-av{
+  width:30px;height:30px;background:var(--accent);
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;color:#000;font-family:'Outfit',sans-serif;flex-shrink:0;
+}
+.user-name{font-size:12.5px;font-weight:500;color:var(--text)}
+.user-role{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace}
+
+/* ════════════════════════════════════════════════════
+   APP — MAIN AREA
+════════════════════════════════════════════════════ */
+.app-main{
+  margin-left:220px;flex:1;min-height:100vh;
+  display:flex;flex-direction:column;min-width:0;
+}
+.app-topbar{
+  height:52px;background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 20px;gap:10px;
+  position:sticky;top:0;z-index:50;flex-shrink:0;transition:background .25s;
+}
+.hamburger{display:none;background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px;margin-right:2px}
+.page-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar-right{display:flex;gap:6px;align-items:center;flex-shrink:0}
 .status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s infinite;flex-shrink:0}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
 .theme-switcher{display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:2px;overflow:hidden}
-.theme-btn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;background:none;border:none;color:var(--text2);transition:all .15s}
-.theme-btn:hover{background:var(--surface3)}
+.theme-btn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;background:none;border:none;color:var(--text3);transition:all .15s}
+.theme-btn:hover{background:var(--surface3);color:var(--text2)}
 .theme-btn.active{background:var(--surface3);color:var(--accent)}
-/* BUTTONS */
-.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;font-size:12.5px;font-weight:500;cursor:pointer;border:none;transition:all .15s;font-family:'DM Sans',sans-serif;border-radius:2px;white-space:nowrap}
+
+/* ════════════════════════════════════════════════════
+   KNOPPEN (app)
+════════════════════════════════════════════════════ */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;padding:7px 13px;
+  font-size:12.5px;font-weight:500;cursor:pointer;border:none;
+  transition:all .15s;font-family:'DM Sans',sans-serif;border-radius:2px;white-space:nowrap;
+}
 .btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border)}
 .btn-ghost:hover{background:var(--surface2);color:var(--text);border-color:var(--border2)}
 .btn-primary{background:var(--accent);color:#000;font-weight:600}
 .btn-primary:hover{background:#d4da2e}
 .btn-danger{background:rgba(232,60,106,.1);color:var(--red);border:1px solid rgba(232,60,106,.25)}
-.btn-ai{background:linear-gradient(135deg,rgba(60,232,180,.15),rgba(232,240,60,.1));color:var(--accent2);border:1px solid rgba(60,232,180,.3)}
-.btn-ai:hover{background:linear-gradient(135deg,rgba(60,232,180,.25),rgba(232,240,60,.15));border-color:var(--accent2)}
+.btn-ai{background:linear-gradient(135deg,rgba(60,232,180,.14),rgba(232,240,60,.08));color:var(--teal);border:1px solid rgba(60,232,180,.3)}
+.btn-ai:hover{background:linear-gradient(135deg,rgba(60,232,180,.24),rgba(232,240,60,.14));border-color:var(--teal)}
 .btn-sm{padding:5px 10px;font-size:11.5px}
 .btn-full{width:100%;justify-content:center;padding:11px}
-/* CONTENT */
-.dash-content{padding:24px;flex:1;max-width:1200px;margin:0 auto;width:100%}
-/* BADGES */
+
+/* ════════════════════════════════════════════════════
+   CONTENT WRAPPER
+════════════════════════════════════════════════════ */
+.app-content{padding:22px;flex:1;max-width:1280px;margin:0 auto;width:100%}
+
+/* ════════════════════════════════════════════════════
+   BADGES (status)
+════════════════════════════════════════════════════ */
 .badge{display:inline-block;padding:2px 8px;font-family:'DM Mono',monospace;font-size:10px;border-radius:2px}
 .badge-green{background:rgba(60,232,144,.12);color:var(--green);border:1px solid rgba(60,232,144,.2)}
 .badge-yellow{background:rgba(232,240,60,.1);color:var(--accent);border:1px solid rgba(232,240,60,.2)}
 .badge-red{background:rgba(232,60,106,.1);color:var(--red);border:1px solid rgba(232,60,106,.2)}
-.badge-blue{background:rgba(60,232,180,.1);color:var(--accent2);border:1px solid rgba(60,232,180,.2)}
-/* VIEWS */
-.view{display:none}
-.view.active{display:block}
-/* PANELS */
-.panel{background:var(--surface);border:1px solid var(--border);transition:background .3s,border-color .3s}
-.panel-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px}
-.panel-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px}
+.badge-blue{background:rgba(60,232,180,.1);color:var(--teal);border:1px solid rgba(60,232,180,.2)}
+
+/* ════════════════════════════════════════════════════
+   PANELS
+════════════════════════════════════════════════════ */
+.panel{background:var(--surface);border:1px solid var(--border);transition:background .25s,border-color .25s}
+.panel-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.panel-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--text)}
 .panel-meta{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)}
 .panel-body{padding:18px}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse}
+th{font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;color:var(--text3);padding:11px 16px;text-align:left;border-bottom:2px solid var(--border);white-space:nowrap;background:var(--surface2)}
+td{padding:12px 16px;font-size:13.5px;font-family:'DM Sans',sans-serif;line-height:1.4;border-bottom:1px solid var(--border);color:var(--text2);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--surface2);cursor:pointer}
+.td-main{color:var(--text);font-weight:600;font-size:14px}
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-/* DASHBOARD */
+
+/* ════════════════════════════════════════════════════
+   DASHBOARD
+════════════════════════════════════════════════════ */
+/* App subviews (binnen app-content) */
+.app-view{display:none}.app-view.active{display:block}
+
 .kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
-.kpi-card{background:var(--surface);border:1px solid var(--border);padding:20px 22px;position:relative;overflow:hidden;animation:fadeUp .4s both;transition:background .3s,border-color .3s}
+.kpi-card{background:var(--surface);border:1px solid var(--border);padding:20px 22px;position:relative;overflow:hidden;animation:fadeUp .4s both;transition:background .25s,border-color .25s}
 .kpi-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px}
-.kpi-card.green::after{background:var(--green)}.kpi-card.yellow::after{background:var(--accent)}.kpi-card.red::after{background:var(--red)}.kpi-card.blue::after{background:var(--accent2)}
-.kpi-label{font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;letter-spacing:.3px;text-transform:uppercase;color:var(--text3);margin-bottom:10px}
-.kpi-value{font-family:'Outfit',sans-serif;font-weight:700;font-size:38px;letter-spacing:-1px;line-height:1;color:var(--text)}
+.kpi-card.green::after{background:var(--green)}.kpi-card.yellow::after{background:var(--accent)}.kpi-card.red::after{background:var(--red)}.kpi-card.blue::after{background:var(--teal)}
+.kpi-label{font-size:11px;font-weight:500;letter-spacing:.3px;text-transform:uppercase;color:var(--text3);margin-bottom:10px}
+.kpi-value{font-family:'Outfit',sans-serif;font-weight:700;font-size:36px;letter-spacing:-1px;line-height:1;color:var(--text)}
 .kpi-sub{font-size:12px;color:var(--text2);margin-top:8px;display:flex;align-items:center;gap:5px}
 .kpi-delta{font-size:12px;font-weight:600}
 .kpi-delta.up{color:var(--green)}.kpi-delta.down{color:var(--red)}
-.dash-grid{display:grid;grid-template-columns:1fr 320px;gap:14px;margin-bottom:14px}
+.dash-grid{display:grid;grid-template-columns:1fr 300px;gap:14px;margin-bottom:14px}
 .bar-chart{display:flex;align-items:flex-end;gap:5px;height:110px}
 .bar-group{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end}
 .bar{width:100%;border-radius:1px 1px 0 0;transition:opacity .15s;cursor:pointer;min-height:4px}
@@ -307,54 +410,57 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .brand-list{display:flex;flex-direction:column}
 .brand-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
 .brand-row:last-child{border-bottom:none}
-.brand-name{font-size:12.5px;font-weight:500;width:80px;flex-shrink:0}
+.brand-name{font-size:12.5px;font-weight:500;width:80px;flex-shrink:0;color:var(--text)}
 .brand-bar-wrap{flex:1;height:5px;background:var(--surface3)}
 .brand-bar-fill{height:100%;background:var(--accent);transition:width 1s cubic-bezier(.4,0,.2,1)}
 .brand-count{font-family:'DM Mono',monospace;font-size:11px;color:var(--text2);width:28px;text-align:right}
-.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-table{width:100%;border-collapse:collapse}
-th{font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;color:var(--text3);padding:11px 16px;text-align:left;border-bottom:2px solid var(--border);white-space:nowrap;background:var(--surface2)}
-td{padding:12px 16px;font-size:13.5px;font-family:'DM Sans',sans-serif;font-weight:400;line-height:1.4;border-bottom:1px solid var(--border);color:var(--text2);white-space:nowrap}
-tr:last-child td{border-bottom:none}
-tr:hover td{background:var(--surface2);cursor:pointer}
-.td-main{color:var(--text);font-weight:600;font-size:14px}
-/* INVENTORY */
+
+/* ════════════════════════════════════════════════════
+   VOORRAAD
+════════════════════════════════════════════════════ */
 .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:10px;flex-wrap:wrap}
-.section-title{font-family:'Syne',sans-serif;font-weight:700;font-size:18px}
+.section-title{font-family:'Syne',sans-serif;font-weight:700;font-size:18px;color:var(--text)}
 .inventory-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
 .search-box{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);padding:7px 12px;flex:1;min-width:180px;max-width:320px}
 .search-box input{background:none;border:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;width:100%}
 .search-box input::placeholder{color:var(--text3)}
 .filter-chips{display:flex;gap:6px;flex-wrap:wrap}
-.filter-chip{display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);padding:6px 11px;font-size:12px;color:var(--text2);cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;border-radius:2px;white-space:nowrap}
+.filter-chip{
+  display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);
+  padding:6px 11px;font-size:12px;color:var(--text2);cursor:pointer;
+  transition:all .15s;font-family:'DM Sans',sans-serif;border-radius:2px;white-space:nowrap;
+}
 .filter-chip:hover{border-color:var(--border2);color:var(--text)}
-.filter-chip.active{border-color:var(--accent);color:var(--accent);background:rgba(232,240,60,.06)}
+.filter-chip.active{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
 .inventory-count{font-family:'DM Mono',monospace;font-size:11px;color:var(--text3)}
 .view-toggle{display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:2px;overflow:hidden}
 .view-btn{padding:5px 10px;font-size:12px;cursor:pointer;color:var(--text2);background:none;border:none;font-family:'DM Sans',sans-serif;transition:all .15s}
 .view-btn.active{background:var(--surface3);color:var(--text)}
 .car-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:10px}
-.car-card{background:var(--surface);border:1px solid var(--border);overflow:hidden;cursor:pointer;transition:border-color .15s,transform .15s,background .3s;animation:fadeUp .35s both}
+.car-card{background:var(--surface);border:1px solid var(--border);overflow:hidden;cursor:pointer;transition:border-color .15s,transform .15s,background .25s;animation:fadeUp .35s both}
 .car-card:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:var(--shadow)}
-.car-img{width:100%;height:150px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:44px;position:relative;overflow:hidden}
+.car-img{width:100%;height:148px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:44px;position:relative;overflow:hidden}
 .car-img-overlay{position:absolute;inset:0;background:linear-gradient(135deg,rgba(232,240,60,.04) 0%,transparent 60%)}
 .car-img-badge{position:absolute;top:8px;right:8px}
 .car-body{padding:13px}
 .car-make{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:2px}
-.car-model{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;margin-bottom:7px}
+.car-model{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;margin-bottom:7px;color:var(--text)}
 .car-specs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .spec-item{font-size:11px;color:var(--text2);display:flex;align-items:center;gap:3px}
 .spec-dot{width:3px;height:3px;background:var(--text3);border-radius:50%}
 .car-footer{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border)}
-.car-price{font-family:'Syne',sans-serif;font-weight:800;font-size:17px}
+.car-price{font-family:'Syne',sans-serif;font-weight:800;font-size:17px;color:var(--text)}
 .car-price small{font-family:'DM Sans',sans-serif;font-size:10px;font-weight:400;color:var(--text3)}
 .car-days{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)}
-/* DETAIL */
+
+/* ════════════════════════════════════════════════════
+   DETAIL
+════════════════════════════════════════════════════ */
 .detail-back{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;margin-bottom:18px;font-family:'DM Mono',monospace;transition:color .15s}
 .detail-back:hover{color:var(--accent)}
 .detail-grid{display:grid;grid-template-columns:1fr 340px;gap:18px;align-items:start}
-.detail-hero{background:var(--surface);border:1px solid var(--border);height:280px;display:flex;align-items:center;justify-content:center;font-size:90px;position:relative;overflow:hidden;margin-bottom:10px}
-.detail-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%,rgba(232,240,60,.07) 0%,transparent 60%)}
+.detail-hero{background:var(--surface);border:1px solid var(--border);height:270px;display:flex;align-items:center;justify-content:center;font-size:88px;position:relative;overflow:hidden;margin-bottom:10px}
+.detail-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%,rgba(232,240,60,.06) 0%,transparent 60%)}
 .detail-thumbs{display:flex;gap:7px}
 .thumb{width:68px;height:50px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;transition:border-color .15s,opacity .15s;opacity:.45}
 .thumb.active{border-color:var(--accent);opacity:1}
@@ -362,7 +468,7 @@ tr:hover td{background:var(--surface2);cursor:pointer}
 .detail-panel{background:var(--surface);border:1px solid var(--border);margin-bottom:10px}
 .detail-head{padding:18px;border-bottom:1px solid var(--border)}
 .detail-make{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:3px}
-.detail-model{font-family:'Syne',sans-serif;font-weight:800;font-size:24px;letter-spacing:-.5px;margin-bottom:10px}
+.detail-model{font-family:'Syne',sans-serif;font-weight:800;font-size:24px;letter-spacing:-.5px;margin-bottom:10px;color:var(--text)}
 .detail-price{font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:var(--accent)}
 .detail-price small{font-family:'DM Sans',sans-serif;font-size:11px;font-weight:400;color:var(--text3)}
 .spec-grid{display:grid;grid-template-columns:1fr 1fr;padding:14px 18px}
@@ -375,78 +481,79 @@ tr:hover td{background:var(--surface2);cursor:pointer}
 .tl-item{display:flex;gap:12px;padding:9px 18px;border-bottom:1px solid var(--border)}
 .tl-item:last-child{border-bottom:none}
 .tl-dot{width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0}
-.tl-dot.green{background:var(--green)}.tl-dot.yellow{background:var(--accent)}.tl-dot.blue{background:var(--accent2)}.tl-dot.gray{background:var(--text3)}
+.tl-dot.green{background:var(--green)}.tl-dot.yellow{background:var(--accent)}.tl-dot.blue{background:var(--teal)}.tl-dot.gray{background:var(--text3)}
 .tl-body{flex:1;min-width:0}
-.tl-title{font-size:12.5px;font-weight:500;margin-bottom:2px}
+.tl-title{font-size:12.5px;font-weight:500;margin-bottom:2px;color:var(--text)}
 .tl-meta{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)}
 
-/* ========== FINANCIAL DASHBOARD ========== */
+/* ════════════════════════════════════════════════════
+   FINANCIEEL
+════════════════════════════════════════════════════ */
 .fin-kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
 .fin-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
-.margin-table th,.margin-table td{padding:11px 16px;font-size:13.5px}
 .margin-bar{height:5px;border-radius:1px;margin-top:5px}
-.marge-pos{background:var(--green)}.marge-neg{background:var(--red)}
-.sparkline{display:flex;align-items:flex-end;gap:3px;height:40px;margin-top:8px}
-.spark-bar{flex:1;border-radius:1px 1px 0 0;min-height:3px;opacity:.8}
 
-/* ========== ADVERTENTIE EXPORT ========== */
+/* ════════════════════════════════════════════════════
+   ADVERTENTIE EXPORT
+════════════════════════════════════════════════════ */
 .export-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
-.platform-card{background:var(--surface);border:1px solid var(--border);padding:18px;cursor:pointer;transition:border-color .15s,background .15s}
+.platform-card{background:var(--surface);border:1px solid var(--border);padding:16px;cursor:pointer;transition:border-color .15s,background .15s}
 .platform-card:hover{border-color:var(--border2);background:var(--surface2)}
-.platform-card.selected{border-color:var(--accent);background:rgba(232,240,60,.04)}
-.platform-logo{font-size:28px;margin-bottom:10px}
-.platform-name{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:4px}
+.platform-card.selected{border-color:var(--accent);background:var(--accent-dim)}
+.platform-name{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:4px;color:var(--text)}
 .platform-desc{font-size:12px;color:var(--text2)}
 .platform-check{float:right;color:var(--accent);font-size:16px;display:none}
 .platform-card.selected .platform-check{display:inline}
-.export-preview{background:var(--surface2);border:1px solid var(--border);padding:18px;margin-top:14px}
-.export-preview-title{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:12px}
 .export-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px}
 .export-tab{padding:8px 16px;font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
-.export-tab:hover{color:var(--text)}
-.export-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-.export-content{font-size:13px;color:var(--text);line-height:1.7;white-space:pre-wrap;font-family:'DM Sans',sans-serif}
+.export-tab:hover{color:var(--text)}.export-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
 .export-field{margin-bottom:12px}
 .export-field label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);display:block;margin-bottom:5px}
 .export-field textarea{width:100%;background:var(--surface3);border:1px solid var(--border);padding:10px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.6;outline:none;resize:vertical;min-height:100px;border-radius:2px;transition:border-color .15s}
 .export-field textarea:focus{border-color:var(--accent)}
 .export-field input{width:100%;background:var(--surface3);border:1px solid var(--border);padding:8px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;border-radius:2px;transition:border-color .15s}
 .export-field input:focus{border-color:var(--accent)}
+.ex-select{background:var(--surface);border:1px solid var(--border);padding:8px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;border-radius:2px;cursor:pointer;-webkit-appearance:none;appearance:none;min-width:280px}
 
-/* ========== AI ASSISTANT ========== */
+/* ════════════════════════════════════════════════════
+   AI ASSISTENT
+════════════════════════════════════════════════════ */
 .ai-panel{background:var(--surface);border:1px solid var(--border);overflow:hidden}
 .ai-header{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
-.ai-indicator{width:8px;height:8px;border-radius:50%;background:var(--accent2);box-shadow:0 0 8px var(--accent2);animation:pulse 2s infinite}
-.ai-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;flex:1}
+.ai-indicator{width:8px;height:8px;border-radius:50%;background:var(--teal);box-shadow:0 0 8px var(--teal);animation:pulse 2s infinite}
+.ai-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;flex:1;color:var(--text)}
 .ai-model{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)}
 .ai-body{padding:18px}
-.ai-car-select{margin-bottom:14px}
-.ai-car-select label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);display:block;margin-bottom:6px}
-.ai-car-select select{width:100%;background:var(--surface2);border:1px solid var(--border);padding:8px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;border-radius:2px;cursor:pointer;-webkit-appearance:none;appearance:none}
+.ai-car-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);display:block;margin-bottom:6px}
+.ai-car-select{width:100%;background:var(--surface2);border:1px solid var(--border);padding:8px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;border-radius:2px;cursor:pointer;-webkit-appearance:none;appearance:none;margin-bottom:14px}
+.ai-actions-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
 .ai-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
 .ai-action-btn{background:var(--surface2);border:1px solid var(--border);padding:12px;cursor:pointer;transition:all .15s;text-align:left;border-radius:2px}
-.ai-action-btn:hover{border-color:var(--accent2);background:rgba(60,232,180,.06)}
+.ai-action-btn:hover{border-color:var(--teal);background:rgba(60,232,180,.06)}
 .ai-action-icon{font-size:18px;margin-bottom:6px}
 .ai-action-label{font-size:12px;font-weight:500;color:var(--text);margin-bottom:2px}
 .ai-action-desc{font-size:11px;color:var(--text3)}
 .ai-output{background:var(--surface2);border:1px solid var(--border);border-radius:2px;min-height:120px;padding:14px;display:none}
 .ai-output.show{display:block}
-.ai-output-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--accent2);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.ai-output-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--teal);margin-bottom:10px}
 .ai-output-text{font-size:13px;color:var(--text);line-height:1.7;white-space:pre-wrap}
 .ai-loading{display:flex;align-items:center;gap:10px;color:var(--text2);font-size:13px}
-.ai-spinner{width:16px;height:16px;border:2px solid var(--border2);border-top-color:var(--accent2);border-radius:50%;animation:spin .7s linear infinite}
+.ai-spinner{width:16px;height:16px;border:2px solid var(--border2);border-top-color:var(--teal);border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .ai-output-actions{display:flex;gap:7px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
 .copy-flash{animation:copyFlash .6s}
-@keyframes copyFlash{0%,100%{color:var(--accent2)}50%{color:var(--green)}}
+@keyframes copyFlash{0%,100%{color:var(--teal)}50%{color:var(--green)}}
 
-/* MODALS */
-.modal-backdrop{display:none;position:fixed;inset:0;background:var(--overlay);z-index:300;align-items:center;justify-content:center;padding:20px}
+/* ════════════════════════════════════════════════════
+   MODALS
+════════════════════════════════════════════════════ */
+/* App modal (RDW etc) */
+.modal-backdrop{display:none;position:fixed;inset:0;background:var(--overlay);z-index:400;align-items:center;justify-content:center;padding:20px}
 .modal-backdrop.open{display:flex}
 .modal{background:var(--surface);border:1px solid var(--border);width:100%;max-width:480px;animation:modalIn .2s;box-shadow:var(--shadow)}
 @keyframes modalIn{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
 .modal-header{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.modal-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px}
+.modal-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:var(--text)}
 .modal-close{background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:2px;transition:color .15s}
 .modal-close:hover{color:var(--text)}
 .modal-body{padding:20px}
@@ -462,45 +569,78 @@ tr:hover td{background:var(--surface2);cursor:pointer}
 .rdw-key{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);text-transform:uppercase}
 .rdw-val{font-size:13px;font-weight:500;color:var(--text)}
 .rdw-status{display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)}
-.rdw-status-dot{width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
-.rdw-status-label{font-family:'Syne',sans-serif;font-weight:700;font-size:14px}
+.rdw-status-dot{width:10px;height:10px;border-radius:50%}
+.rdw-status-label{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--text)}
 .rdw-sub{font-size:11px;color:var(--text2)}
-/* SCROLLBAR */
-::-webkit-scrollbar{width:5px}
+
+/* Admin confirm modal */
+.mback{display:none;position:fixed;inset:0;background:var(--overlay);z-index:500;align-items:center;justify-content:center;padding:20px}
+.mback.open{display:flex}
+.m-box{background:var(--surface);border:1px solid var(--border);width:100%;max-width:370px;padding:26px;box-shadow:var(--shadow);animation:modalIn .2s}
+.m-title{font-family:'Outfit',sans-serif;font-weight:700;font-size:17px;margin-bottom:7px;color:var(--text)}
+.m-text{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:20px}
+.m-acts{display:flex;gap:7px;justify-content:flex-end}
+.m-cancel{padding:7px 14px;background:transparent;border:1px solid var(--border);color:var(--text2);font-size:13px;cursor:pointer;border-radius:2px;font-family:'DM Sans',sans-serif;transition:all .15s}
+.m-cancel:hover{border-color:var(--border2);color:var(--text)}
+.m-confirm{padding:7px 14px;border:none;font-size:13px;font-weight:600;cursor:pointer;border-radius:2px;font-family:'DM Sans',sans-serif;transition:background .15s}
+
+/* ════════════════════════════════════════════════════
+   TOAST
+════════════════════════════════════════════════════ */
+.toast{position:fixed;bottom:22px;right:22px;z-index:999;background:var(--surface);border:1px solid var(--border);padding:11px 16px;font-size:13px;display:flex;align-items:center;gap:9px;box-shadow:var(--shadow);transform:translateY(70px);opacity:0;transition:all .3s cubic-bezier(.4,0,.2,1);max-width:300px;border-radius:2px}
+.toast.show{transform:translateY(0);opacity:1}
+.t-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* ════════════════════════════════════════════════════
+   SCROLLBAR
+════════════════════════════════════════════════════ */
+::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--border2)}
-/* RESPONSIVE */
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* ════════════════════════════════════════════════════
+   RESPONSIVE
+════════════════════════════════════════════════════ */
 @media(max-width:900px){
-  .sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}
-  .sidebar-overlay.open{display:block}.logo-close{display:flex}
-  .main{margin-left:0}.hamburger{display:flex}
-  .kpi-strip,.fin-kpi-strip{grid-template-columns:repeat(2,1fr)}
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar-overlay.open{display:block}
+  .sb-logo-close{display:flex}
+  .app-main{margin-left:0}
+  .hamburger{display:flex}
+  .kpi-strip,.fin-kpi-strip,.kpi-row{grid-template-columns:repeat(2,1fr)}
   .dash-grid,.fin-grid,.export-grid{grid-template-columns:1fr}
   .detail-grid{grid-template-columns:1fr}
   .ai-actions{grid-template-columns:1fr}
+  .ai-grid{grid-template-columns:1fr!important}
 }
 @media(max-width:600px){
-  .kpi-strip,.fin-kpi-strip{grid-template-columns:repeat(2,1fr);gap:7px}
-  .kpi-value{font-size:22px}.dash-content{padding:14px}
+  .kpi-strip,.fin-kpi-strip,.kpi-row{grid-template-columns:repeat(2,1fr);gap:7px}
+  .kpi-value,.kpi-val{font-size:26px}
+  .app-content,.admin-content{padding:14px}
   .car-grid{grid-template-columns:1fr}
-  .section-header{flex-direction:column;align-items:flex-start}
+  .section-header,.panel-header{flex-direction:column;align-items:flex-start}
+  .auth-body,.auth-top,.auth-foot{padding-left:18px;padding-right:18px}
+  .field-row{grid-template-columns:1fr}
+  .topbar-right .btn-sm:not(:last-child){display:none}
 }
-
 </style>
 </head>
 <body>
 
-<!-- BG effecten -->
 <div class="bg-grid"></div>
 <div class="bg-glow"></div>
 
-<!-- ═══════════════════════════════════════
+<!-- ══════════════════════════════════════════
      VIEW 1: LOGIN / REGISTREREN
-═══════════════════════════════════════ -->
+══════════════════════════════════════════ -->
 <div id="view-login" class="view active">
   <div class="auth-card">
     <div class="auth-top">
-      <div class="logo"><div class="logo-mark">AP</div><span class="logo-name">AutoPanel</span></div>
+      <div class="auth-logo">
+        <div class="auth-logo-mark">AP</div>
+        <span class="auth-logo-name">AutoPanel</span>
+      </div>
       <div class="tabs">
         <div class="tab active" onclick="switchTab('login')">Inloggen</div>
         <div class="tab" onclick="switchTab('register')">Aanmelden</div>
@@ -509,13 +649,13 @@ tr:hover td{background:var(--surface2);cursor:pointer}
 
     <div class="auth-body">
 
-      <!-- LOGIN -->
+      <!-- LOGIN FORM -->
       <div class="aform active" id="aform-login">
         <div class="form-title">Welkom terug</div>
         <div class="form-sub">Log in op je AutoPanel account</div>
 
         <div class="alert alert-err" id="l-err"></div>
-        <div class="alert alert-warn" id="l-pending">⏳ Je account wacht nog op goedkeuring. Je ontvangt een e-mail zodra je toegang hebt.</div>
+        <div class="alert alert-warn" id="l-pending">⏳ Je account wacht nog op goedkeuring. Je hoort van ons via e-mail.</div>
         <div class="alert alert-err" id="l-revoked">Je toegang is ingetrokken. Neem contact op via <a href="mailto:info@autopanel.nl" style="color:inherit">info@autopanel.nl</a>.</div>
 
         <div class="field">
@@ -532,10 +672,10 @@ tr:hover td{background:var(--surface2);cursor:pointer}
         <div style="display:flex;justify-content:flex-end;margin-bottom:18px">
           <a href="#" style="font-size:12px;color:var(--text2);text-decoration:none" onclick="forgotPw(event)">Wachtwoord vergeten?</a>
         </div>
-        <button class="btn-primary" id="l-btn" onclick="doLogin()">Inloggen</button>
+        <button class="btn-auth" id="l-btn" onclick="doLogin()">Inloggen</button>
       </div>
 
-      <!-- REGISTER -->
+      <!-- REGISTER FORM -->
       <div class="aform" id="aform-register">
         <div class="form-title">Account aanvragen</div>
         <div class="form-sub">Na goedkeuring ontvang je toegang via e-mail</div>
@@ -593,7 +733,7 @@ tr:hover td{background:var(--surface2);cursor:pointer}
               <input type="password" class="inp" id="r-pwd" placeholder="Minimaal 8 tekens" autocomplete="new-password">
               <button class="eye" onclick="togglePw('r-pwd',this)" tabindex="-1">👁</button>
             </div>
-            <div class="field-err" id="e-pwd">Minimaal 8 tekens</div>
+            <div class="field-err" id="e-pwd">Minimaal 8 tekens vereist</div>
           </div>
           <div class="field">
             <label class="lbl">Wachtwoord bevestigen</label>
@@ -603,7 +743,7 @@ tr:hover td{background:var(--surface2);cursor:pointer}
             </div>
             <div class="field-err" id="e-pwd2">Wachtwoorden komen niet overeen</div>
           </div>
-          <button class="btn-primary" id="r-btn" onclick="doRegister()">Aanvraag indienen</button>
+          <button class="btn-auth" id="r-btn" onclick="doRegister()">Aanvraag indienen</button>
         </div>
       </div>
 
@@ -612,15 +752,14 @@ tr:hover td{background:var(--surface2);cursor:pointer}
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════
+<!-- ══════════════════════════════════════════
      VIEW 2: ADMIN PANEL
-═══════════════════════════════════════ -->
+══════════════════════════════════════════ -->
 <div id="view-admin" class="view">
   <div class="topbar">
     <div class="t-mark">AP</div>
     <span class="t-name">AutoPanel</span>
     <span class="t-badge t-badge-admin">Beheer</span>
-    <span class="t-url">admin.autopanel.nl</span>
     <div class="t-sp"></div>
     <div class="t-user">
       <div class="t-av t-av-admin" id="a-av">A</div>
@@ -629,12 +768,12 @@ tr:hover td{background:var(--surface2);cursor:pointer}
     </div>
   </div>
 
-  <div class="content">
+  <div class="admin-content">
     <div class="kpi-row" id="kpi-row"></div>
 
-    <div class="panel">
-      <div class="panel-head">
-        <div class="panel-title">Gebruikersaanvragen</div>
+    <div class="a-panel">
+      <div class="a-panel-head">
+        <div class="a-panel-title">Gebruikersaanvragen</div>
         <div class="search-row">
           <div class="sbox">
             <span style="color:var(--text3)">⌕</span>
@@ -648,7 +787,7 @@ tr:hover td{background:var(--surface2);cursor:pointer}
           </div>
         </div>
       </div>
-      <div class="panel-scroll">
+      <div class="a-panel-scroll">
         <table class="ut">
           <thead><tr><th>Naam</th><th>Bedrijf</th><th>E-mail</th><th>Type</th><th>Aangevraagd</th><th>Status</th><th>Acties</th></tr></thead>
           <tbody id="utbody"></tbody>
@@ -656,12 +795,12 @@ tr:hover td{background:var(--surface2);cursor:pointer}
       </div>
     </div>
 
-    <div class="panel">
-      <div class="panel-head">
-        <div class="panel-title">Activiteitslog</div>
+    <div class="a-panel">
+      <div class="a-panel-head">
+        <div class="a-panel-title">Activiteitslog</div>
         <div class="panel-meta" id="log-meta"></div>
       </div>
-      <div class="panel-scroll">
+      <div class="a-panel-scroll">
         <table class="ut">
           <thead><tr><th>Tijdstip</th><th>Actie</th><th>Gebruiker</th></tr></thead>
           <tbody id="logtbody"></tbody>
@@ -671,339 +810,294 @@ tr:hover td{background:var(--surface2);cursor:pointer}
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════
-     VIEW 3: APP (dashboard)
-═══════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════
+     VIEW 3: APP DASHBOARD
+══════════════════════════════════════════ -->
 <div id="view-app" class="view">
-  <span id="u-welcome" style="display:none"></span>
-  <span id="u-av" style="display:none"></span>
-  <span id="u-uname" style="display:none"></span>
 
-<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
-
-<aside class="sidebar" id="sidebar">
-  <div class="logo">
-    <div class="logo-mark">AP</div>
-    <div class="logo-text">AutoPanel<span>Voorraadbeheer</span></div>
-    <button class="logo-close" onclick="closeSidebar()">✕</button>
-  </div>
-  <nav class="nav">
-    <div class="nav-section-label">Overzicht</div>
-    <div class="nav-item active" onclick="appShowView('dashboard');closeSidebar()"><span class="icon">▣</span>Dashboard</div>
-    <div class="nav-item" onclick="appShowView('inventory');closeSidebar()"><span class="icon">◫</span>Voorraad<span class="nav-badge">247</span></div>
-    <div class="nav-section-label">Analyse</div>
-    <div class="nav-item" onclick="appShowView('finance');closeSidebar()"><span class="icon">◈</span>Financieel</div>
-    <div class="nav-item" onclick="appShowView('export');closeSidebar()"><span class="icon">↗</span>Advertentie-export</div>
-    <div class="nav-item" onclick="appShowView('ai');closeSidebar()"><span class="icon">◎</span>AI-assistent<span class="nav-badge" style="background:var(--accent2);color:#000">Nieuw</span></div>
-    <div class="nav-section-label">Handel</div>
-    <div class="nav-item" onclick="closeSidebar()"><span class="icon">↕</span>Inkoop</div>
-    <div class="nav-item" onclick="closeSidebar()"><span class="icon">◈</span>Veilingen<span class="nav-badge alert">3</span></div>
-    <div class="nav-item" onclick="openRdw();closeSidebar()"><span class="icon">◉</span>RDW Check</div>
-    <div class="nav-section-label">Beheer</div>
-    <div class="nav-item" onclick="closeSidebar()"><span class="icon">≡</span>Rapporten</div>
-    <div class="nav-item" onclick="closeSidebar()"><span class="icon">⚙</span>Instellingen</div>
-  </nav>
-  <div class="sidebar-footer">
-    <div class="user-chip">
-      <div class="avatar">MV</div>
-      <div style="flex:1;min-width:0">
-        <div class="user-name">M. van Dijk</div>
-        <div class="user-role">Inkoper · AutoPanel</div>
-      </div>
+  <!-- Sidebar -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-mark">AP</div>
+      <div class="sb-logo-text">AutoPanel<span class="sb-logo-sub">Voorraadbeheer</span></div>
+      <button class="sb-logo-close" onclick="closeSidebar()">✕</button>
     </div>
-  </div>
-</aside>
-
-<main class="main">
-  <div class="topbar">
-    <button class="hamburger" onclick="openSidebar()">☰</button>
-    <div class="page-title" id="topbar-title">Dashboard</div>
-    <div class="topbar-actions">
-      <div class="status-dot"></div>
-      <div class="theme-switcher">
-        <button class="theme-btn active" title="Dark" onclick="setTheme('dark',this)">●</button>
-        <button class="theme-btn" title="Light" onclick="setTheme('light',this)">○</button>
-        <button class="theme-btn" title="Blue" onclick="setTheme('blue',this)">◈</button>
-      </div>
-      <button class="btn btn-ai btn-sm" onclick="appShowView('ai')">✦ AI</button>
-      <button class="btn btn-primary btn-sm" onclick="appShowView('inventory')">+ Toevoegen</button>
-      <button class="btn btn-ghost btn-sm" onclick="doLogout()" style="margin-left:4px">↩ Uitloggen</button>
-    </div>
-  </div>
-
-  <div class="dash-content">
-
-    <!-- ====== DASHBOARD ====== -->
-    <div class="view active" id="view-dashboard">
-      <div class="kpi-strip">
-        <div class="kpi-card yellow" style="animation-delay:.05s"><div class="kpi-label">Totale voorraad</div><div class="kpi-value">247</div><div class="kpi-sub"><span class="kpi-delta up">▲ +12</span> t.o.v. vorige maand</div></div>
-        <div class="kpi-card green" style="animation-delay:.10s"><div class="kpi-label">Gem. inkoopprijs</div><div class="kpi-value">€18.4K</div><div class="kpi-sub"><span class="kpi-delta down">▼ -2.1%</span> t.o.v. vorige maand</div></div>
-        <div class="kpi-card blue" style="animation-delay:.15s"><div class="kpi-label">Verkopen (maand)</div><div class="kpi-value">41</div><div class="kpi-sub"><span class="kpi-delta up">▲ +8</span> boven target</div></div>
-        <div class="kpi-card red" style="animation-delay:.20s"><div class="kpi-label">Ouder dan 90d</div><div class="kpi-value">19</div><div class="kpi-sub"><span class="kpi-delta down">▼ 7.7%</span> van voorraad</div></div>
-      </div>
-      <div class="dash-grid">
-        <div class="panel"><div class="panel-header"><div class="panel-title">Inkoop vs. Verkoop</div><div class="panel-meta">Jan – Jun 2025</div></div><div class="panel-body"><div class="bar-chart" id="bar-chart"></div><div class="chart-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Inkoop</div><div class="legend-item"><div class="legend-dot" style="background:var(--surface3);border:1px solid var(--border2)"></div>Verkoop</div></div></div></div>
-        <div class="panel"><div class="panel-header"><div class="panel-title">Per merk</div><div class="panel-meta">Top 5</div></div><div class="panel-body"><div class="brand-list" id="brand-list"></div></div></div>
-      </div>
-      <div class="panel"><div class="panel-header"><div class="panel-title">Recente activiteit</div><button class="btn btn-ghost btn-sm" onclick="appShowView('inventory')">Alles →</button></div><div class="table-wrap"><table><thead><tr><th>Voertuig</th><th>Kenteken</th><th>Jaar</th><th>KM</th><th>Prijs</th><th>Status</th><th>Dagen</th></tr></thead><tbody id="recent-table"></tbody></table></div></div>
-    </div>
-
-    <!-- ====== INVENTORY ====== -->
-    <div class="view" id="view-inventory">
-      <div class="section-header">
-        <div class="section-title">Voorraad</div>
-        <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
-          <div class="view-toggle"><button class="view-btn active" id="grid-btn" onclick="setGridView(true)">⊞</button><button class="view-btn" id="list-btn" onclick="setGridView(false)">☰</button></div>
-          <button class="btn btn-ghost btn-sm" onclick="openRdw()">◉ RDW</button>
-          <button class="btn btn-ai btn-sm" onclick="appShowView('ai')">✦ AI tekst</button>
-          <button class="btn btn-primary btn-sm">+ Toevoegen</button>
+    <nav class="sb-nav">
+      <div class="sb-section">Overzicht</div>
+      <div class="sb-item active" id="nav-dashboard" onclick="appShowView('dashboard');closeSidebar()"><span class="icon">▣</span>Dashboard</div>
+      <div class="sb-item" id="nav-inventory" onclick="appShowView('inventory');closeSidebar()"><span class="icon">◫</span>Voorraad<span class="sb-badge" id="nav-count">247</span></div>
+      <div class="sb-section">Analyse</div>
+      <div class="sb-item" id="nav-finance" onclick="appShowView('finance');closeSidebar()"><span class="icon">◈</span>Financieel</div>
+      <div class="sb-item" id="nav-export" onclick="appShowView('export');closeSidebar()"><span class="icon">↗</span>Advertentie-export</div>
+      <div class="sb-item" id="nav-ai" onclick="appShowView('ai');closeSidebar()"><span class="icon">◎</span>AI-assistent<span class="sb-badge" style="background:var(--teal);color:#000">Nieuw</span></div>
+      <div class="sb-section">Handel</div>
+      <div class="sb-item" onclick="closeSidebar()"><span class="icon">↕</span>Inkoop</div>
+      <div class="sb-item" onclick="closeSidebar()"><span class="icon">◈</span>Veilingen<span class="sb-badge alert">3</span></div>
+      <div class="sb-item" onclick="openRdw();closeSidebar()"><span class="icon">◉</span>RDW Check</div>
+      <div class="sb-section">Beheer</div>
+      <div class="sb-item" onclick="closeSidebar()"><span class="icon">≡</span>Rapporten</div>
+      <div class="sb-item" onclick="closeSidebar()"><span class="icon">⚙</span>Instellingen</div>
+    </nav>
+    <div class="sb-footer">
+      <div class="user-chip">
+        <div class="user-av" id="sb-av">U</div>
+        <div style="flex:1;min-width:0;overflow:hidden">
+          <div class="user-name" id="sb-name">Gebruiker</div>
+          <div class="user-role" id="sb-role">AutoPanel</div>
         </div>
       </div>
-      <div class="inventory-toolbar">
-        <div class="search-box"><span style="color:var(--text3);font-size:13px">⌕</span><input type="text" placeholder="Zoek merk, model, kenteken…" oninput="filterCars(this.value)"></div>
-        <div class="filter-chips">
-          <div class="filter-chip active" onclick="appSetFilter(this,'Alle')">Alle</div>
-          <div class="filter-chip" onclick="appSetFilter(this,'Beschikbaar')">Beschikbaar</div>
-          <div class="filter-chip" onclick="appSetFilter(this,'Gereserveerd')">Gereserveerd</div>
-          <div class="filter-chip" onclick="appSetFilter(this,'Verkocht')">Verkocht</div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="app-main">
+    <div class="app-topbar">
+      <button class="hamburger" onclick="openSidebar()">☰</button>
+      <div class="page-title" id="topbar-title">Dashboard</div>
+      <div class="topbar-right">
+        <div class="status-dot"></div>
+        <div class="theme-switcher">
+          <button class="theme-btn active" title="Dark" onclick="setTheme('dark',this)">●</button>
+          <button class="theme-btn" title="Light" onclick="setTheme('light',this)">○</button>
+          <button class="theme-btn" title="Blue" onclick="setTheme('blue',this)">◈</button>
         </div>
-        <span class="inventory-count" id="inv-count">247 voertuigen</span>
+        <button class="btn btn-ai btn-sm" onclick="appShowView('ai')">✦ AI</button>
+        <button class="btn btn-primary btn-sm" onclick="appShowView('inventory')">+ Toevoegen</button>
+        <button class="btn btn-ghost btn-sm" onclick="doLogout()">↩</button>
       </div>
-      <div class="car-grid" id="car-grid"></div>
     </div>
 
-    <!-- ====== DETAIL ====== -->
-    <div class="view" id="view-detail">
-      <div class="detail-back" onclick="appShowView('inventory')">← Terug naar voorraad</div>
-      <div class="detail-grid">
-        <div>
-          <div class="detail-hero" id="detail-hero"><span style="position:relative;z-index:1;font-size:90px">🚗</span></div>
-          <div class="detail-thumbs" id="detail-thumbs"></div>
+    <div class="app-content">
+
+      <!-- DASHBOARD -->
+      <div class="app-view active" id="app-view-dashboard">
+        <div class="kpi-strip">
+          <div class="kpi-card yellow" style="animation-delay:.05s"><div class="kpi-label">Totale voorraad</div><div class="kpi-value">247</div><div class="kpi-sub"><span class="kpi-delta up">▲ +12</span> t.o.v. vorige maand</div></div>
+          <div class="kpi-card green" style="animation-delay:.10s"><div class="kpi-label">Gem. inkoopprijs</div><div class="kpi-value">€18.4K</div><div class="kpi-sub"><span class="kpi-delta down">▼ -2.1%</span> t.o.v. vorige maand</div></div>
+          <div class="kpi-card blue" style="animation-delay:.15s"><div class="kpi-label">Verkopen (maand)</div><div class="kpi-value">41</div><div class="kpi-sub"><span class="kpi-delta up">▲ +8</span> boven target</div></div>
+          <div class="kpi-card red" style="animation-delay:.20s"><div class="kpi-label">Ouder dan 90d</div><div class="kpi-value">19</div><div class="kpi-sub"><span class="kpi-delta down">▼ 7.7%</span> van voorraad</div></div>
         </div>
-        <div>
-          <div class="detail-panel">
-            <div class="detail-head">
-              <div class="detail-make" id="d-make">VOLKSWAGEN</div>
-              <div class="detail-model" id="d-model">Golf 1.5 TSI</div>
-              <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:12px" id="d-badges"></div>
-              <div class="detail-price" id="d-price">€ 22.500 <small>excl. BTW</small></div>
-            </div>
-            <div class="spec-grid" id="d-specs"></div>
-            <div class="detail-actions">
-              <button class="btn btn-primary btn-full">Reserveren</button>
-              <button class="btn btn-ghost btn-full">Offerte maken</button>
-              <button class="btn btn-ai btn-full" id="ai-detail-btn" onclick="appShowView('ai')">✦ AI advertentietekst</button>
-              <button class="btn btn-ghost btn-full" onclick="appShowView('export')" style="color:var(--accent2);border-color:rgba(60,232,180,.3)">↗ Advertentie exporteren</button>
-              <button class="btn btn-ghost btn-full" onclick="openRdw()">◉ RDW controleren</button>
-              <button class="btn btn-danger btn-full">Voertuig afmelden</button>
-            </div>
+        <div class="dash-grid">
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">Inkoop vs. Verkoop</div><div class="panel-meta">Jan – Jun 2025</div></div>
+            <div class="panel-body"><div class="bar-chart" id="bar-chart"></div><div class="chart-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Inkoop</div><div class="legend-item"><div class="legend-dot" style="background:var(--surface3);border:1px solid var(--border2)"></div>Verkoop</div></div></div>
           </div>
-          <div class="detail-panel">
-            <div class="panel-header"><div class="panel-title">Geschiedenis</div></div>
-            <div class="timeline">
-              <div class="tl-item"><div class="tl-dot green"></div><div class="tl-body"><div class="tl-title">Ingekocht via AutoPanel Veiling</div><div class="tl-meta">14 mei 2025 · € 19.200</div></div></div>
-              <div class="tl-item"><div class="tl-dot yellow"></div><div class="tl-body"><div class="tl-title">RDW controle geslaagd</div><div class="tl-meta">15 mei 2025</div></div></div>
-              <div class="tl-item"><div class="tl-dot blue"></div><div class="tl-body"><div class="tl-title">12 foto's toegevoegd</div><div class="tl-meta">16 mei 2025</div></div></div>
-              <div class="tl-item"><div class="tl-dot gray"></div><div class="tl-body"><div class="tl-title">Gepubliceerd op AutoTrack & Marktplaats</div><div class="tl-meta">17 mei 2025</div></div></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ====== FINANCIEEL DASHBOARD ====== -->
-    <div class="view" id="view-finance">
-      <div class="section-header"><div class="section-title">Financieel overzicht</div><button class="btn btn-ghost btn-sm">⬇ Export Excel</button></div>
-      <div class="fin-kpi-strip" id="fin-kpis"></div>
-      <div class="fin-grid">
-        <div class="panel">
-          <div class="panel-header"><div class="panel-title">Marge per voertuig</div><div class="panel-meta">Huidige voorraad</div></div>
-          <div class="table-wrap">
-            <table class="margin-table">
-              <thead><tr><th>Voertuig</th><th>Inkoop</th><th>Vraagprijs</th><th>Marge</th><th>%</th></tr></thead>
-              <tbody id="margin-table"></tbody>
-            </table>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">Per merk</div><div class="panel-meta">Top 5</div></div>
+            <div class="panel-body"><div class="brand-list" id="brand-list"></div></div>
           </div>
         </div>
         <div class="panel">
-          <div class="panel-header"><div class="panel-title">Maandelijkse omzet</div><div class="panel-meta">2025</div></div>
-          <div class="panel-body" id="fin-chart-body"></div>
+          <div class="panel-header"><div class="panel-title">Recente activiteit</div><button class="btn btn-ghost btn-sm" onclick="appShowView('inventory')">Alles →</button></div>
+          <div class="table-wrap"><table><thead><tr><th>Voertuig</th><th>Kenteken</th><th>Jaar</th><th>KM</th><th>Prijs</th><th>Status</th><th>Dagen</th></tr></thead><tbody id="recent-table"></tbody></table></div>
         </div>
       </div>
-      <div class="panel">
-        <div class="panel-header"><div class="panel-title">Winst & Verlies overzicht</div><div class="panel-meta">YTD 2025</div></div>
-        <div class="table-wrap">
-          <table><thead><tr><th>Maand</th><th>Omzet</th><th>Inkoopkosten</th><th>Bruto winst</th><th>Marge %</th><th>Trend</th></tr></thead>
-          <tbody id="pl-table"></tbody></table>
-        </div>
-      </div>
-    </div>
 
-    <!-- ====== ADVERTENTIE EXPORT ====== -->
-    <div class="view" id="view-export">
-      <div class="section-header"><div class="section-title">Advertentie-export</div></div>
-      <div style="margin-bottom:14px">
-        <label style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);display:block;margin-bottom:8px">Selecteer voertuig</label>
-        <select id="export-car-select" style="background:var(--surface);border:1px solid var(--border);padding:8px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;border-radius:2px;cursor:pointer;-webkit-appearance:none;appearance:none;min-width:280px" onchange="updateExport()"></select>
-      </div>
-      <div class="export-grid">
-        <div class="panel">
-          <div class="panel-header"><div class="panel-title">Platform kiezen</div></div>
-          <div class="panel-body" style="display:flex;flex-direction:column;gap:8px" id="platform-list"></div>
+      <!-- VOORRAAD -->
+      <div class="app-view" id="app-view-inventory">
+        <div class="section-header">
+          <div class="section-title">Voorraad</div>
+          <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
+            <div class="view-toggle"><button class="view-btn active" id="grid-btn" onclick="setGridView(true)">⊞</button><button class="view-btn" id="list-btn" onclick="setGridView(false)">☰</button></div>
+            <button class="btn btn-ghost btn-sm" onclick="openRdw()">◉ RDW</button>
+            <button class="btn btn-ai btn-sm" onclick="appShowView('ai')">✦ AI tekst</button>
+            <button class="btn btn-primary btn-sm">+ Toevoegen</button>
+          </div>
         </div>
-        <div class="panel">
-          <div class="panel-header"><div class="panel-title">Advertentie preview</div><button class="btn btn-ai btn-sm" id="export-ai-btn" onclick="generateExportAI()">✦ Genereer met AI</button></div>
-          <div class="panel-body">
-            <div class="export-tabs">
-              <div class="export-tab active" onclick="switchExportTab(this,'tekst')">Tekst</div>
-              <div class="export-tab" onclick="switchExportTab(this,'specs')">Specs</div>
-              <div class="export-tab" onclick="switchExportTab(this,'prijs')">Prijs</div>
-            </div>
-            <div id="export-tab-tekst">
-              <div class="export-field">
-                <label>Titel</label>
-                <input type="text" id="export-title" value="">
+        <div class="inventory-toolbar">
+          <div class="search-box"><span style="color:var(--text3);font-size:13px">⌕</span><input type="text" placeholder="Zoek merk, model, kenteken…" oninput="filterCars(this.value)"></div>
+          <div class="filter-chips">
+            <div class="filter-chip active" onclick="appSetFilter(this,'Alle')">Alle</div>
+            <div class="filter-chip" onclick="appSetFilter(this,'Beschikbaar')">Beschikbaar</div>
+            <div class="filter-chip" onclick="appSetFilter(this,'Gereserveerd')">Gereserveerd</div>
+            <div class="filter-chip" onclick="appSetFilter(this,'Verkocht')">Verkocht</div>
+          </div>
+          <span class="inventory-count" id="inv-count">247 voertuigen</span>
+        </div>
+        <div class="car-grid" id="car-grid"></div>
+      </div>
+
+      <!-- DETAIL -->
+      <div class="app-view" id="app-view-detail">
+        <div class="detail-back" onclick="appShowView('inventory')">← Terug naar voorraad</div>
+        <div class="detail-grid">
+          <div>
+            <div class="detail-hero" id="detail-hero"><span style="position:relative;z-index:1;font-size:88px">🚗</span></div>
+            <div class="detail-thumbs" id="detail-thumbs"></div>
+          </div>
+          <div>
+            <div class="detail-panel">
+              <div class="detail-head">
+                <div class="detail-make" id="d-make">MERK</div>
+                <div class="detail-model" id="d-model">Model</div>
+                <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:12px" id="d-badges"></div>
+                <div class="detail-price" id="d-price">€ 0 <small>excl. BTW</small></div>
               </div>
-              <div class="export-field">
-                <label>Advertentietekst</label>
-                <textarea id="export-body" rows="6"></textarea>
+              <div class="spec-grid" id="d-specs"></div>
+              <div class="detail-actions">
+                <button class="btn btn-primary btn-full">Reserveren</button>
+                <button class="btn btn-ghost btn-full">Offerte maken</button>
+                <button class="btn btn-ai btn-full" onclick="appShowView('ai')">✦ AI advertentietekst</button>
+                <button class="btn btn-ghost btn-full" onclick="appShowView('export')" style="color:var(--teal);border-color:rgba(60,232,180,.3)">↗ Advertentie exporteren</button>
+                <button class="btn btn-ghost btn-full" onclick="openRdw()">◉ RDW controleren</button>
+                <button class="btn btn-danger btn-full">Voertuig afmelden</button>
               </div>
             </div>
-            <div id="export-tab-specs" style="display:none">
-              <div id="export-specs-content" style="font-size:13px;color:var(--text);line-height:2"></div>
-            </div>
-            <div id="export-tab-prijs" style="display:none">
-              <div id="export-prijs-content"></div>
-            </div>
-            <div style="display:flex;gap:7px;margin-top:14px;flex-wrap:wrap">
-              <button class="btn btn-primary btn-sm" onclick="exportToClipboard()">⎘ Kopiëren</button>
-              <button class="btn btn-ghost btn-sm">↗ Marktplaats</button>
-              <button class="btn btn-ghost btn-sm">↗ AutoTrack</button>
-              <button class="btn btn-ghost btn-sm">↗ AutoScout24</button>
+            <div class="detail-panel">
+              <div class="panel-header"><div class="panel-title">Geschiedenis</div></div>
+              <div class="timeline">
+                <div class="tl-item"><div class="tl-dot green"></div><div class="tl-body"><div class="tl-title">Ingekocht via AutoPanel Veiling</div><div class="tl-meta">14 mei 2025 · € 19.200</div></div></div>
+                <div class="tl-item"><div class="tl-dot yellow"></div><div class="tl-body"><div class="tl-title">RDW controle geslaagd</div><div class="tl-meta">15 mei 2025</div></div></div>
+                <div class="tl-item"><div class="tl-dot blue"></div><div class="tl-body"><div class="tl-title">12 foto's toegevoegd</div><div class="tl-meta">16 mei 2025</div></div></div>
+                <div class="tl-item"><div class="tl-dot gray"></div><div class="tl-body"><div class="tl-title">Gepubliceerd op AutoTrack &amp; Marktplaats</div><div class="tl-meta">17 mei 2025</div></div></div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- ====== AI ASSISTENT ====== -->
-    <div class="view" id="view-ai">
-      <div class="section-header"><div class="section-title">AI-assistent</div><span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--accent2)">● Aangedreven door Claude</span></div>
-      <div style="display:grid;grid-template-columns:1fr 360px;gap:14px;align-items:start" id="ai-main-grid">
-        <div>
-          <div class="ai-panel" style="margin-bottom:14px">
-            <div class="ai-header">
-              <div class="ai-indicator"></div>
-              <div class="ai-title">Voertuig selecteren</div>
-              <div class="ai-model">claude-sonnet-4-20250514</div>
+      <!-- FINANCIEEL -->
+      <div class="app-view" id="app-view-finance">
+        <div class="section-header"><div class="section-title">Financieel overzicht</div><button class="btn btn-ghost btn-sm">⬇ Export Excel</button></div>
+        <div class="fin-kpi-strip" id="fin-kpis"></div>
+        <div class="fin-grid">
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">Marge per voertuig</div><div class="panel-meta">Huidige voorraad</div></div>
+            <div class="table-wrap"><table><thead><tr><th>Voertuig</th><th>Inkoop</th><th>Vraagprijs</th><th>Marge</th><th>%</th></tr></thead><tbody id="margin-table"></tbody></table></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">Maandelijkse omzet</div><div class="panel-meta">2025</div></div>
+            <div class="panel-body" id="fin-chart-body"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><div class="panel-title">Winst &amp; Verlies overzicht</div><div class="panel-meta">YTD 2025</div></div>
+          <div class="table-wrap"><table><thead><tr><th>Maand</th><th>Omzet</th><th>Inkoopkosten</th><th>Bruto winst</th><th>Marge %</th><th>Trend</th></tr></thead><tbody id="pl-table"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- ADVERTENTIE EXPORT -->
+      <div class="app-view" id="app-view-export">
+        <div class="section-header"><div class="section-title">Advertentie-export</div></div>
+        <div style="margin-bottom:14px">
+          <label style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);display:block;margin-bottom:8px">Selecteer voertuig</label>
+          <select class="ex-select" id="export-car-select" onchange="updateExport()"></select>
+        </div>
+        <div class="export-grid">
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">Platform kiezen</div></div>
+            <div class="panel-body" style="display:flex;flex-direction:column;gap:8px" id="platform-list"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">Advertentie preview</div><button class="btn btn-ai btn-sm" id="export-ai-btn" onclick="generateExportAI()">✦ Genereer met AI</button></div>
+            <div class="panel-body">
+              <div class="export-tabs">
+                <div class="export-tab active" onclick="switchExportTab(this,'tekst')">Tekst</div>
+                <div class="export-tab" onclick="switchExportTab(this,'specs')">Specs</div>
+                <div class="export-tab" onclick="switchExportTab(this,'prijs')">Prijs</div>
+              </div>
+              <div id="export-tab-tekst">
+                <div class="export-field"><label>Titel</label><input type="text" id="export-title" value=""></div>
+                <div class="export-field"><label>Advertentietekst</label><textarea id="export-body" rows="6"></textarea></div>
+              </div>
+              <div id="export-tab-specs" style="display:none"><div id="export-specs-content" style="font-size:13px;color:var(--text);line-height:2"></div></div>
+              <div id="export-tab-prijs" style="display:none"><div id="export-prijs-content"></div></div>
+              <div style="display:flex;gap:7px;margin-top:14px;flex-wrap:wrap">
+                <button class="btn btn-primary btn-sm" onclick="exportToClipboard()">⎘ Kopiëren</button>
+                <button class="btn btn-ghost btn-sm">↗ Marktplaats</button>
+                <button class="btn btn-ghost btn-sm">↗ AutoTrack</button>
+                <button class="btn btn-ghost btn-sm">↗ AutoScout24</button>
+              </div>
             </div>
-            <div class="ai-body">
-              <div class="ai-car-select">
-                <label>Voertuig</label>
-                <select id="ai-car-select" style="background:var(--surface2);border:1px solid var(--border);padding:8px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;border-radius:2px;cursor:pointer;-webkit-appearance:none;appearance:none;width:100%"></select>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI ASSISTENT -->
+      <div class="app-view" id="app-view-ai">
+        <div class="section-header">
+          <div class="section-title">AI-assistent</div>
+          <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--teal)">● Aangedreven door Claude</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 360px;gap:14px;align-items:start" class="ai-grid">
+          <div>
+            <div class="ai-panel" style="margin-bottom:14px">
+              <div class="ai-header">
+                <div class="ai-indicator"></div>
+                <div class="ai-title">Voertuig selecteren</div>
+                <div class="ai-model">claude-sonnet-4-20250514</div>
               </div>
-              <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Wat wil je genereren?</div>
-              <div class="ai-actions">
-                <button class="ai-action-btn" onclick="runAI('advertentie')">
-                  <div class="ai-action-icon">📝</div>
-                  <div class="ai-action-label">Advertentietekst</div>
-                  <div class="ai-action-desc">Volledige tekst voor Marktplaats of AutoTrack</div>
-                </button>
-                <button class="ai-action-btn" onclick="runAI('prijsadvies')">
-                  <div class="ai-action-icon">💶</div>
-                  <div class="ai-action-label">Prijsadvies</div>
-                  <div class="ai-action-desc">Marktanalyse en vraagprijs suggestie</div>
-                </button>
-                <button class="ai-action-btn" onclick="runAI('seo')">
-                  <div class="ai-action-icon">🔍</div>
-                  <div class="ai-action-label">SEO omschrijving</div>
-                  <div class="ai-action-desc">Zoekwoord-geoptimaliseerde tekst</div>
-                </button>
-                <button class="ai-action-btn" onclick="runAI('checklist')">
-                  <div class="ai-action-icon">✓</div>
-                  <div class="ai-action-label">Inkoop checklist</div>
-                  <div class="ai-action-desc">Punten om op te letten bij inspectie</div>
-                </button>
-              </div>
-              <div class="ai-output" id="ai-output">
-                <div class="ai-output-label" id="ai-output-label">✦ Resultaat</div>
-                <div class="ai-output-text" id="ai-output-text"></div>
-                <div class="ai-output-actions" id="ai-output-actions" style="display:none">
-                  <button class="btn btn-ghost btn-sm" id="copy-btn" onclick="copyAiOutput()">⎘ Kopiëren</button>
-                  <button class="btn btn-ghost btn-sm" onclick="useInExport()">↗ Gebruik in export</button>
+              <div class="ai-body">
+                <label class="ai-car-label">Voertuig</label>
+                <select class="ai-car-select" id="ai-car-select"></select>
+                <div class="ai-actions-label">Wat wil je genereren?</div>
+                <div class="ai-actions">
+                  <button class="ai-action-btn" onclick="runAI('advertentie')"><div class="ai-action-icon">📝</div><div class="ai-action-label">Advertentietekst</div><div class="ai-action-desc">Volledige tekst voor Marktplaats of AutoTrack</div></button>
+                  <button class="ai-action-btn" onclick="runAI('prijsadvies')"><div class="ai-action-icon">💶</div><div class="ai-action-label">Prijsadvies</div><div class="ai-action-desc">Marktanalyse en vraagprijs suggestie</div></button>
+                  <button class="ai-action-btn" onclick="runAI('seo')"><div class="ai-action-icon">🔍</div><div class="ai-action-label">SEO omschrijving</div><div class="ai-action-desc">Zoekwoord-geoptimaliseerde tekst</div></button>
+                  <button class="ai-action-btn" onclick="runAI('checklist')"><div class="ai-action-icon">✓</div><div class="ai-action-label">Inkoop checklist</div><div class="ai-action-desc">Punten om op te letten bij inspectie</div></button>
+                </div>
+                <div class="ai-output" id="ai-output">
+                  <div class="ai-output-label" id="ai-output-label">✦ Resultaat</div>
+                  <div class="ai-output-text" id="ai-output-text"></div>
+                  <div class="ai-output-actions" id="ai-output-actions" style="display:none">
+                    <button class="btn btn-ghost btn-sm" id="copy-btn" onclick="copyAiOutput()">⎘ Kopiëren</button>
+                    <button class="btn btn-ghost btn-sm" onclick="useInExport()">↗ Gebruik in export</button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-        <div>
-          <div class="panel" style="margin-bottom:14px">
-            <div class="panel-header"><div class="panel-title">Tips voor beste resultaten</div></div>
-            <div class="panel-body" style="display:flex;flex-direction:column;gap:10px">
-              <div style="font-size:12.5px;color:var(--text2);line-height:1.6">
-                <div style="color:var(--accent);font-weight:600;margin-bottom:4px;font-family:'DM Mono',monospace;font-size:11px">◈ ADVERTENTIETEKST</div>
-                Vul foto's en opties in voor de meest volledige tekst. De AI gebruikt kenteken, jaar, km-stand en uitrusting.
-              </div>
-              <div style="border-top:1px solid var(--border);padding-top:10px;font-size:12.5px;color:var(--text2);line-height:1.6">
-                <div style="color:var(--accent2);font-weight:600;margin-bottom:4px;font-family:'DM Mono',monospace;font-size:11px">◈ PRIJSADVIES</div>
-                Gebaseerd op merk, model, jaar en km-stand. Vergelijkt met marktgemiddelden.
-              </div>
-              <div style="border-top:1px solid var(--border);padding-top:10px;font-size:12.5px;color:var(--text2);line-height:1.6">
-                <div style="color:var(--green);font-weight:600;margin-bottom:4px;font-family:'DM Mono',monospace;font-size:11px">◈ CHECKLIST</div>
-                Specifiek per merk/model. Bekende zwakke punten en aandachtspunten bij inkoop.
+          <div>
+            <div class="panel" style="margin-bottom:14px">
+              <div class="panel-header"><div class="panel-title">Tips voor beste resultaten</div></div>
+              <div class="panel-body" style="display:flex;flex-direction:column;gap:10px">
+                <div style="font-size:12.5px;color:var(--text2);line-height:1.6"><div style="color:var(--accent);font-weight:600;margin-bottom:4px;font-family:'DM Mono',monospace;font-size:11px">◈ ADVERTENTIETEKST</div>Vul foto's en opties in voor de meest volledige tekst. De AI gebruikt kenteken, jaar, km-stand en uitrusting.</div>
+                <div style="border-top:1px solid var(--border);padding-top:10px;font-size:12.5px;color:var(--text2);line-height:1.6"><div style="color:var(--teal);font-weight:600;margin-bottom:4px;font-family:'DM Mono',monospace;font-size:11px">◈ PRIJSADVIES</div>Gebaseerd op merk, model, jaar en km-stand. Vergelijkt met marktgemiddelden.</div>
+                <div style="border-top:1px solid var(--border);padding-top:10px;font-size:12.5px;color:var(--text2);line-height:1.6"><div style="color:var(--green);font-weight:600;margin-bottom:4px;font-family:'DM Mono',monospace;font-size:11px">◈ CHECKLIST</div>Specifiek per merk/model. Bekende zwakke punten en aandachtspunten bij inkoop.</div>
               </div>
             </div>
-          </div>
-          <div class="panel">
-            <div class="panel-header"><div class="panel-title">Recente AI-outputs</div></div>
-            <div style="padding:4px 0" id="ai-history">
-              <div style="padding:10px 18px;border-bottom:1px solid var(--border)">
-                <div style="font-size:12px;font-weight:500;margin-bottom:2px">BMW 320i M Sport</div>
-                <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)">Advertentietekst · 5 min geleden</div>
-              </div>
-              <div style="padding:10px 18px;border-bottom:1px solid var(--border)">
-                <div style="font-size:12px;font-weight:500;margin-bottom:2px">VW Golf 1.5 TSI</div>
-                <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)">Prijsadvies · 2 uur geleden</div>
-              </div>
-              <div style="padding:10px 18px">
-                <div style="font-size:12px;font-weight:500;margin-bottom:2px">Mercedes C 220d</div>
-                <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)">Inkoop checklist · gisteren</div>
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title">Recente AI-outputs</div></div>
+              <div style="padding:4px 0">
+                <div style="padding:10px 18px;border-bottom:1px solid var(--border)"><div style="font-size:12px;font-weight:500;margin-bottom:2px;color:var(--text)">BMW 320i M Sport</div><div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)">Advertentietekst · 5 min geleden</div></div>
+                <div style="padding:10px 18px;border-bottom:1px solid var(--border)"><div style="font-size:12px;font-weight:500;margin-bottom:2px;color:var(--text)">VW Golf 1.5 TSI</div><div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)">Prijsadvies · 2 uur geleden</div></div>
+                <div style="padding:10px 18px"><div style="font-size:12px;font-weight:500;margin-bottom:2px;color:var(--text)">Mercedes C 220d</div><div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)">Inkoop checklist · gisteren</div></div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-  </div>
-</main>
+    </div><!-- /app-content -->
+  </main>
 
-<!-- RDW MODAL -->
-<div class="modal-backdrop" id="rdw-modal">
-  <div class="modal">
-    <div class="modal-header"><div class="modal-title">◉ RDW Kentekencheck</div><button class="modal-close" onclick="appCloseModal('rdw-modal')">✕</button></div>
-    <div class="modal-body">
-      <div class="input-group"><label class="input-label">Kenteken</label><input type="text" class="input-field" id="rdw-input" placeholder="bijv. K-123-XP" maxlength="8" oninput="this.value=this.value.toUpperCase()"></div>
-      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px" onclick="doRdwCheck()">Controleren</button>
-      <div class="rdw-result" id="rdw-result">
-        <div class="rdw-status"><div class="rdw-status-dot" id="rdw-dot"></div><div><div class="rdw-status-label" id="rdw-status-label"></div><div class="rdw-sub" id="rdw-status-sub"></div></div></div>
-        <div id="rdw-rows"></div>
+  <!-- RDW MODAL -->
+  <div class="modal-backdrop" id="rdw-modal">
+    <div class="modal">
+      <div class="modal-header"><div class="modal-title">◉ RDW Kentekencheck</div><button class="modal-close" onclick="appCloseModal('rdw-modal')">✕</button></div>
+      <div class="modal-body">
+        <div class="input-group"><label class="input-label">Kenteken</label><input type="text" class="input-field" id="rdw-input" placeholder="bijv. K-123-XP" maxlength="9" oninput="this.value=this.value.toUpperCase()"></div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px" onclick="doRdwCheck()">Controleren</button>
+        <div class="rdw-result" id="rdw-result">
+          <div class="rdw-status"><div class="rdw-status-dot" id="rdw-dot"></div><div><div class="rdw-status-label" id="rdw-status-label"></div><div class="rdw-sub" id="rdw-status-sub"></div></div></div>
+          <div id="rdw-rows"></div>
+        </div>
       </div>
+      <div class="modal-footer"><button class="btn btn-ghost" onclick="appCloseModal('rdw-modal')">Sluiten</button><button class="btn btn-primary" onclick="appCloseModal('rdw-modal')">Overnemen in dossier</button></div>
     </div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="appCloseModal('rdw-modal')">Sluiten</button><button class="btn btn-primary" onclick="appCloseModal('rdw-modal')">Overnemen in dossier</button></div>
   </div>
-</div>
 
+</div><!-- /view-app -->
 
-</div>
-
-<!-- Confirm modal -->
+<!-- Admin confirm modal -->
 <div class="mback" id="mback">
-  <div class="modal">
+  <div class="m-box">
     <div class="m-title" id="m-title"></div>
-    <div class="m-text"  id="m-text"></div>
+    <div class="m-text" id="m-text"></div>
     <div class="m-acts">
-      <button class="m-cancel" onclick="closeModal()">Annuleren</button>
+      <button class="m-cancel" onclick="closeAdminModal()">Annuleren</button>
       <button class="m-confirm" id="m-confirm">Bevestigen</button>
     </div>
   </div>
@@ -1013,8 +1107,19 @@ tr:hover td{background:var(--surface2);cursor:pointer}
 <div class="toast" id="toast"><div class="t-dot" id="t-dot"></div><span id="t-txt"></span></div>
 
 <script>
-/* ── Dashboard JS ── */
-// ===== DATA =====
+'use strict';
+
+/* ══════════════════════════════════════════
+   SUPABASE CONFIG
+══════════════════════════════════════════ */
+const SB_URL = 'https://ysnsiidgpvnaiasapzjg.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlzbnNpaWRncHZuYWlhc2FwempnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxNzk1MjksImV4cCI6MjA4ODc1NTUyOX0.UVS5EUhrlJznIYkG5pF-SDb2EaEo2qL1FsYgcXuN2yc';
+const { createClient } = supabase;
+const sb = createClient(SB_URL, SB_KEY);
+
+/* ══════════════════════════════════════════
+   DEMO DATA
+══════════════════════════════════════════ */
 const cars = [
   {id:1,make:'Volkswagen',model:'Golf 1.5 TSI',year:2022,km:34000,price:22500,inkoop:19200,fuel:'Benzine',trans:'Automaat',status:'Beschikbaar',days:12,color:'Wit',kenteken:'K-123-XP',emoji:'🚗'},
   {id:2,make:'BMW',model:'320i M Sport',year:2021,km:61000,price:34900,inkoop:29800,fuel:'Benzine',trans:'Automaat',status:'Gereserveerd',days:8,color:'Blauw',kenteken:'L-456-RB',emoji:'🚙'},
@@ -1025,586 +1130,452 @@ const cars = [
   {id:7,make:'Seat',model:'Leon FR 1.5',year:2022,km:41000,price:21900,inkoop:18600,fuel:'Benzine',trans:'Handmatig',status:'Beschikbaar',days:17,color:'Oranje',kenteken:'J-111-SL',emoji:'🚘'},
   {id:8,make:'Peugeot',model:'308 1.2 PureTech',year:2021,km:57000,price:19400,inkoop:16100,fuel:'Benzine',trans:'Automaat',status:'Beschikbaar',days:22,color:'Wit',kenteken:'M-222-PG',emoji:'🚗'},
 ];
-
-const months = ['Jan','Feb','Mrt','Apr','Mei','Jun'];
+const months  = ['Jan','Feb','Mrt','Apr','Mei','Jun'];
 const inkoop  = [38,52,45,61,54,47];
 const verkoop = [31,44,39,58,46,41];
 const brands  = [{name:'Volkswagen',count:48},{name:'BMW',count:39},{name:'Mercedes',count:35},{name:'Audi',count:31},{name:'Toyota',count:27}];
 const omzet   = [612000,847000,731000,982000,874000,763000];
 const kosten  = [498000,689000,592000,791000,706000,618000];
-
 const platforms = [
-  {id:'marktplaats',name:'Marktplaats',icon:'🟦',desc:'Grootste NL-platform · B2C',fields:{titel:true,tekst:true,prijs:true}},
-  {id:'autotrack',name:'AutoTrack',icon:'🔴',desc:'Professioneel · dealers',fields:{titel:true,tekst:true,prijs:true}},
-  {id:'autoscout',name:'AutoScout24',icon:'🟠',desc:'Pan-Europees · breed bereik',fields:{titel:true,tekst:true,prijs:true}},
-  {id:'mobilede',name:'mobile.de',icon:'🟡',desc:'Duits platform · export',fields:{titel:true,tekst:true,prijs:true}},
+  {id:'marktplaats',name:'Marktplaats',icon:'🟦',desc:'Grootste NL-platform · B2C'},
+  {id:'autotrack',name:'AutoTrack',icon:'🔴',desc:'Professioneel · dealers'},
+  {id:'autoscout',name:'AutoScout24',icon:'🟠',desc:'Pan-Europees · breed bereik'},
+  {id:'mobilede',name:'mobile.de',icon:'🟡',desc:'Duits platform · export'},
 ];
 
-let currentFilter='Alle', currentSearch='', selectedPlatform='marktplaats', currentAiCar=cars[0];
-let lastAiOutput='';
+let currentFilter = 'Alle', currentSearch = '', selectedPlatform = 'marktplaats';
+let currentAiCar = cars[0], lastAiOutput = '';
 
-// ===== HELPERS =====
-function statusBadge(s){const m={Beschikbaar:'badge-green',Gereserveerd:'badge-yellow',Verkocht:'badge-red'};return`<span class="badge ${m[s]||'badge-blue'}">${s}</span>`}
-function fmt(n){return(+n).toLocaleString('nl-NL')}
-function marge(c){return c.price - c.inkoop}
-function margePct(c){return Math.round((c.price-c.inkoop)/c.inkoop*100)}
-
-// ===== DASHBOARD =====
-function renderDashboard(){
-  const maxV=Math.max(...inkoop,...verkoop);
-  document.getElementById('bar-chart').innerHTML=months.map((m,i)=>`<div class="bar-group"><div class="bar primary" style="height:${Math.round(inkoop[i]/maxV*100)}%"></div><div class="bar secondary" style="height:${Math.round(verkoop[i]/maxV*100)}%"></div><div class="bar-label">${m}</div></div>`).join('');
-  const maxB=brands[0].count;
-  document.getElementById('brand-list').innerHTML=brands.map(b=>`<div class="brand-row"><div class="brand-name">${b.name}</div><div class="brand-bar-wrap"><div class="brand-bar-fill" style="width:0%" data-w="${Math.round(b.count/maxB*100)}%"></div></div><div class="brand-count">${b.count}</div></div>`).join('');
-  setTimeout(()=>{document.querySelectorAll('.brand-bar-fill').forEach(el=>{el.style.width=el.dataset.w})},80);
-  document.getElementById('recent-table').innerHTML=cars.slice(0,6).map(c=>`<tr onclick="showDetail(${c.id})"><td class="td-main">${c.make} ${c.model}</td><td><span style="font-size:13px;font-weight:500;color:var(--text);letter-spacing:.4px">${c.kenteken}</span></td><td>${c.year}</td><td>${fmt(c.km)} km</td><td style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--text)">€ ${fmt(c.price)}</td><td>${statusBadge(c.status)}</td><td><span style="font-size:13px;font-weight:500;color:${c.days>60?'var(--red)':c.days>30?'var(--orange)':'var(--text2)'}">${c.days}d</span></td></tr>`).join('');
+/* ══════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════ */
+const fmt  = n => (+n).toLocaleString('nl-NL');
+const marge    = c => c.price - c.inkoop;
+const margePct = c => Math.round((c.price - c.inkoop) / c.inkoop * 100);
+function statusBadge(s) {
+  const m = {Beschikbaar:'badge-green',Gereserveerd:'badge-yellow',Verkocht:'badge-red'};
+  return `<span class="badge ${m[s]||'badge-blue'}">${s}</span>`;
 }
-
-// ===== INVENTORY =====
-function getFiltered(){return cars.filter(c=>(currentFilter==='Alle'||c.status===currentFilter)&&(c.make+' '+c.model+' '+c.kenteken).toLowerCase().includes(currentSearch.toLowerCase()))}
-function renderInventory(){
-  const list=getFiltered();
-  document.getElementById('inv-count').textContent=list.length+' voertuigen';
-  document.getElementById('car-grid').innerHTML=list.map((c,i)=>`<div class="car-card" style="animation-delay:${i*.04}s" onclick="showDetail(${c.id})"><div class="car-img"><span style="position:relative;z-index:1">${c.emoji}</span><div class="car-img-overlay"></div><div class="car-img-badge">${statusBadge(c.status)}</div></div><div class="car-body"><div class="car-make">${c.make}</div><div class="car-model">${c.model}</div><div class="car-specs"><span class="spec-item">${c.year}</span><span class="spec-item"><span class="spec-dot"></span>${fmt(c.km)} km</span><span class="spec-item"><span class="spec-dot"></span>${c.fuel}</span></div><div class="car-footer"><div class="car-price">€ ${fmt(c.price)} <small>excl.</small></div><div class="car-days">${c.days}d in stock</div></div></div></div>`).join('');
+function v(id)           { return document.getElementById(id)?.value.trim() || ''; }
+function el(id)          { return document.getElementById(id); }
+function setBtn(id,d,t)  { const b=el(id); b.disabled=d; b.textContent=t; }
+function showAlert(id,m) { const e=el(id); if(!e)return; e.textContent=m; e.classList.add('show'); }
+function hideEl(id)      { el(id)?.classList.remove('show'); }
+function togglePw(id,btn){ const i=el(id); const s=i.type==='password'; i.type=s?'text':'password'; btn.textContent=s?'🙈':'👁'; }
+function toast(msg, color='var(--green)') {
+  el('t-txt').textContent=msg; el('t-dot').style.background=color;
+  const t=el('toast'); t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3200);
 }
-function filterCars(q){currentSearch=q;renderInventory()}
-function appSetFilter(el,s){document.querySelectorAll('.filter-chip').forEach(e=>e.classList.remove('active'));el.classList.add('active');currentFilter=s;renderInventory()}
-function setGridView(g){document.getElementById('grid-btn').classList.toggle('active',g);document.getElementById('list-btn').classList.toggle('active',!g);document.getElementById('car-grid').style.gridTemplateColumns=g?'repeat(auto-fill,minmax(268px,1fr))':'1fr'}
-
-// ===== DETAIL =====
-function showDetail(id){
-  const c=cars.find(x=>x.id===id);
-  document.getElementById('d-make').textContent=c.make.toUpperCase();
-  document.getElementById('d-model').textContent=c.model;
-  document.getElementById('d-price').innerHTML=`€ ${fmt(c.price)} <small>excl. BTW</small>`;
-  document.getElementById('d-badges').innerHTML=statusBadge(c.status)+`<span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)">${c.kenteken}</span>`;
-  document.getElementById('detail-hero').innerHTML=`<span style="font-size:90px;position:relative;z-index:1">${c.emoji}</span><div style="position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%,rgba(232,240,60,.07) 0%,transparent 60%)"></div>`;
-  document.getElementById('detail-thumbs').innerHTML=[c.emoji,'🚘','⚙','📋'].map((e,i)=>`<div class="thumb ${i===0?'active':''}" onclick="this.parentNode.querySelectorAll('.thumb').forEach(t=>t.classList.remove('active'));this.classList.add('active')">${e}</div>`).join('');
-  const specs=[['Bouwjaar',c.year],['Kleur',c.color],['KM-stand',fmt(c.km)+' km'],['Brandstof',c.fuel],['Transmissie',c.trans],['Kenteken',c.kenteken],['Dagen in stock',c.days+'d'],['Marge','€ '+fmt(marge(c))+' ('+margePct(c)+'%)']];
-  document.getElementById('d-specs').innerHTML=specs.map(([k,v])=>`<div class="spec-row"><div class="spec-key">${k}</div><div class="spec-val">${v}</div></div>`).join('');
-  currentAiCar=c;
-  appShowView('detail');
-}
-
-// ===== FINANCE =====
-function renderFinance(){
-  const totOmzet=omzet.reduce((a,b)=>a+b,0);
-  const totKosten=kosten.reduce((a,b)=>a+b,0);
-  const totWinst=totOmzet-totKosten;
-  const gemMarge=Math.round(totWinst/totOmzet*100);
-  document.getElementById('fin-kpis').innerHTML=`
-    <div class="kpi-card green" style="animation-delay:.05s"><div class="kpi-label">YTD Omzet</div><div class="kpi-value">€${Math.round(totOmzet/1000)}K</div><div class="kpi-sub"><span class="kpi-delta up">▲ +14%</span> t.o.v. vorig jaar</div></div>
-    <div class="kpi-card yellow" style="animation-delay:.10s"><div class="kpi-label">Bruto winst</div><div class="kpi-value">€${Math.round(totWinst/1000)}K</div><div class="kpi-sub"><span class="kpi-delta up">▲ +9%</span> t.o.v. vorig jaar</div></div>
-    <div class="kpi-card blue" style="animation-delay:.15s"><div class="kpi-label">Gem. marge</div><div class="kpi-value">${gemMarge}%</div><div class="kpi-sub"><span class="kpi-delta up">▲ +1.2pp</span> t.o.v. vorig jaar</div></div>
-    <div class="kpi-card red" style="animation-delay:.20s"><div class="kpi-label">Negatieve marge</div><div class="kpi-value">3</div><div class="kpi-sub">voertuigen onder kostprijs</div></div>`;
-  // Margin table
-  document.getElementById('margin-table').innerHTML=cars.map(c=>{
-    const m=marge(c),pct=margePct(c),pos=m>=0;
-    return`<tr onclick="showDetail(${c.id})"><td class="td-main">${c.make} ${c.model}</td><td style="font-size:13.5px;color:var(--text2)">€ ${fmt(c.inkoop)}</td><td style="font-size:13.5px;color:var(--text2)">€ ${fmt(c.price)}</td><td style="font-size:14px;font-weight:600;color:${pos?'var(--green)':'var(--red)'}">€ ${fmt(m)}</td><td><span style="font-size:13px;font-weight:600;color:${pos?'var(--green)':'var(--red)'}">${pct}%</span><div class="margin-bar" style="width:${Math.min(Math.abs(pct)*2,100)}%;background:${pos?'var(--green)':'var(--red)'}"></div></td></tr>`}).join('');
-  // Omzet chart
-  const maxO=Math.max(...omzet);
-  document.getElementById('fin-chart-body').innerHTML=`<div class="bar-chart" style="height:130px">${months.map((m,i)=>`<div class="bar-group"><div class="bar primary" style="height:${Math.round(omzet[i]/maxO*100)}%;background:var(--green)" title="${fmt(omzet[i])}"></div><div class="bar secondary" style="height:${Math.round(kosten[i]/maxO*100)}%" title="${fmt(kosten[i])}"></div><div class="bar-label">${m}</div></div>`).join('')}</div><div class="chart-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Omzet</div><div class="legend-item"><div class="legend-dot" style="background:var(--surface3);border:1px solid var(--border2)"></div>Kosten</div></div>`;
-  // P&L table
-  document.getElementById('pl-table').innerHTML=months.map((m,i)=>{
-    const w=omzet[i]-kosten[i],p=Math.round(w/omzet[i]*100);
-    const trend=i>0?(omzet[i]>omzet[i-1]?'<span style="font-size:14px;color:var(--green)">▲</span>':'<span style="font-size:14px;color:var(--red)">▼</span>'):'—';
-    return`<tr><td class="td-main">${m} 2025</td><td style="font-size:13.5px">€ ${fmt(omzet[i])}</td><td style="font-size:13.5px">€ ${fmt(kosten[i])}</td><td style="font-size:14px;font-weight:600;color:var(--green)">€ ${fmt(w)}</td><td style="font-size:13.5px;font-weight:600">${p}%</td><td style="font-size:16px">${trend}</td></tr>`}).join('');
-}
-
-// ===== EXPORT =====
-function renderExport(){
-  const sel=document.getElementById('export-car-select');
-  sel.innerHTML=cars.map(c=>`<option value="${c.id}">${c.make} ${c.model} (${c.kenteken})</option>`).join('');
-  document.getElementById('platform-list').innerHTML=platforms.map(p=>`<div class="platform-card ${p.id===selectedPlatform?'selected':''}" onclick="selectPlatform('${p.id}',this)"><span style="float:right;color:var(--accent);display:${p.id===selectedPlatform?'inline':'none'}" class="platform-check">✓</span><div style="display:flex;align-items:center;gap:10px"><div style="font-size:22px">${p.icon}</div><div><div class="platform-name">${p.name}</div><div class="platform-desc">${p.desc}</div></div></div></div>`).join('');
-  updateExport();
-}
-function selectPlatform(id,el){
-  selectedPlatform=id;
-  document.querySelectorAll('.platform-card').forEach(c=>{c.classList.remove('selected');c.querySelector('.platform-check').style.display='none'});
-  el.classList.add('selected');el.querySelector('.platform-check').style.display='inline';
-  updateExport();
-}
-function updateExport(){
-  const id=parseInt(document.getElementById('export-car-select').value)||cars[0].id;
-  const c=cars.find(x=>x.id===id)||cars[0];
-  document.getElementById('export-title').value=`${c.make} ${c.model} ${c.year} — ${fmt(c.km)} km — ${c.fuel}`;
-  document.getElementById('export-body').value=`Te koop: ${c.make} ${c.model} (${c.year})\n\nDeze ${c.color.toLowerCase()} ${c.make} ${c.model} is in uitstekende staat en rijdt fantastisch. Met slechts ${fmt(c.km)} km op de teller is dit exemplaar nog lang niet klaar.\n\nSpecificaties:\n• Bouwjaar: ${c.year}\n• Kilometerstand: ${fmt(c.km)} km\n• Brandstof: ${c.fuel}\n• Transmissie: ${c.trans}\n• Kleur: ${c.color}\n• Kenteken: ${c.kenteken}\n\nPrijs: € ${fmt(c.price)} (excl. BTW)\n\nVoor meer informatie of een proefrit, neem gerust contact op!`;
-  document.getElementById('export-specs-content').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:0">${[['Merk',c.make],['Model',c.model],['Bouwjaar',c.year],['KM-stand',fmt(c.km)+' km'],['Brandstof',c.fuel],['Transmissie',c.trans],['Kleur',c.color],['Kenteken',c.kenteken],['Vraagprijs','€ '+fmt(c.price)]].map(([k,v])=>`<div style="padding:7px 0;border-bottom:1px solid var(--border);font-size:12.5px"><span style="color:var(--text3);font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase">${k}</span><br><strong>${v}</strong></div>`).join('')}</div>`;
-  document.getElementById('export-prijs-content').innerHTML=`<div style="display:flex;flex-direction:column;gap:10px"><div style="padding:14px;background:var(--surface2);border:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-bottom:4px">VRAAGPRIJS</div><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:24px;color:var(--accent)">€ ${fmt(c.price)}</div><div style="font-size:11px;color:var(--text2)">excl. BTW</div></div><div style="padding:14px;background:var(--surface2);border:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-bottom:4px">BRUTO MARGE</div><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:var(--green)">€ ${fmt(marge(c))}</div><div style="font-size:11px;color:var(--text2)">${margePct(c)}% op inkoopprijs</div></div></div>`;
-}
-function switchExportTab(el,tab){
-  document.querySelectorAll('.export-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');
-  ['tekst','specs','prijs'].forEach(t=>{document.getElementById('export-tab-'+t).style.display=t===tab?'block':'none'});
-}
-function exportToClipboard(){
-  const title=document.getElementById('export-title').value;
-  const body=document.getElementById('export-body').value;
-  navigator.clipboard.writeText(title+'\n\n'+body).then(()=>{
-    const btn=event.target;btn.textContent='✓ Gekopieerd!';setTimeout(()=>btn.textContent='⎘ Kopiëren',2000);
-  }).catch(()=>alert('Tekst geselecteerd — Ctrl+C om te kopiëren'));
-}
-async function generateExportAI(){
-  const id=parseInt(document.getElementById('export-car-select').value)||cars[0].id;
-  const c=cars.find(x=>x.id===id)||cars[0];
-  const btn=document.getElementById('export-ai-btn');
-  btn.textContent='✦ Bezig…';btn.disabled=true;
-  try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`Schrijf een professionele advertentietekst in het Nederlands voor een autodealer voor dit voertuig:\n\nMerk: ${c.make}\nModel: ${c.model}\nBouwjaar: ${c.year}\nKilometerstand: ${fmt(c.km)} km\nBrandstof: ${c.fuel}\nTransmissie: ${c.trans}\nKleur: ${c.color}\nVraagprijs: € ${fmt(c.price)}\n\nSchrijf een aantrekkelijke advertentietekst van 100-150 woorden. Geen opsomming, gewone alinea's. Eindig met een call-to-action.`}]})});
-    const data=await resp.json();
-    const text=data.content?.map(b=>b.text||'').join('')||'Fout bij genereren.';
-    document.getElementById('export-body').value=text;
-  }catch(e){
-    document.getElementById('export-body').value='Verbindingsfout. Controleer je internetverbinding.';
-  }
-  btn.textContent='✦ Genereer met AI';btn.disabled=false;
-}
-
-// ===== AI ASSISTENT =====
-function renderAI(){
-  const sel=document.getElementById('ai-car-select');
-  sel.innerHTML=cars.map(c=>`<option value="${c.id}">${c.make} ${c.model} (${c.kenteken})</option>`).join('');
-  sel.addEventListener('change',()=>{currentAiCar=cars.find(x=>x.id===parseInt(sel.value))||cars[0]});
-}
-
-async function runAI(type){
-  const carId=parseInt(document.getElementById('ai-car-select').value)||cars[0].id;
-  const c=cars.find(x=>x.id===carId)||cars[0];
-  currentAiCar=c;
-
-  const prompts={
-    advertentie:`Schrijf een professionele advertentietekst in het Nederlands voor:\n${c.make} ${c.model} ${c.year}, ${fmt(c.km)} km, ${c.fuel}, ${c.trans}, ${c.color}, € ${fmt(c.price)} excl. BTW.\nMax 150 woorden. Vriendelijk en overtuigend. Eindig met call-to-action.`,
-    prijsadvies:`Geef een beknopt prijsadvies voor een ${c.make} ${c.model} uit ${c.year} met ${fmt(c.km)} km. Inkoop was € ${fmt(c.inkoop)}, huidige vraagprijs € ${fmt(c.price)}. Is de marge van ${margePct(c)}% realistisch? Geef 3 concrete aanbevelingen. Max 120 woorden.`,
-    seo:`Schrijf een SEO-geoptimaliseerde omschrijving voor: ${c.make} ${c.model} ${c.year} ${c.fuel}. Verwerk relevante zoekwoorden op een natuurlijke manier. Max 120 woorden. Gericht op Nederlandse autodealers.`,
-    checklist:`Geef een inkoop-checklist van 8 punten voor een ${c.make} ${c.model} ${c.year} met ${fmt(c.km)} km. Focus op bekende zwakke punten van dit model. Elk punt max 1 zin.`
-  };
-  const labels={advertentie:'📝 Advertentietekst',prijsadvies:'💶 Prijsadvies',seo:'🔍 SEO-omschrijving',checklist:'✓ Inkoop checklist'};
-
-  const out=document.getElementById('ai-output');
-  const text=document.getElementById('ai-output-text');
-  const label=document.getElementById('ai-output-label');
-  const actions=document.getElementById('ai-output-actions');
-
-  out.classList.add('show');
-  actions.style.display='none';
-  label.textContent='✦ '+labels[type];
-  text.innerHTML='<div class="ai-loading"><div class="ai-spinner"></div> Claude is aan het schrijven…</div>';
-
-  try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompts[type]}]})});
-    const data=await resp.json();
-    lastAiOutput=data.content?.map(b=>b.text||'').join('')||'Fout: geen antwoord ontvangen.';
-    text.textContent=lastAiOutput;
-    actions.style.display='flex';
-  }catch(e){
-    text.textContent='Verbindingsfout. Probeer het opnieuw.';
-  }
-}
-
-function copyAiOutput(){
-  navigator.clipboard.writeText(lastAiOutput).then(()=>{
-    const btn=document.getElementById('copy-btn');
-    btn.textContent='✓ Gekopieerd!';btn.classList.add('copy-flash');
-    setTimeout(()=>{btn.textContent='⎘ Kopiëren';btn.classList.remove('copy-flash')},2000);
-  });
-}
-function useInExport(){
-  document.getElementById('export-body').value=lastAiOutput;
-  appShowView('export');
-}
-
-// ===== NAV =====
-function appShowView(v){
-  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
-  document.getElementById('view-'+v).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
-  const titleMap={dashboard:'Dashboard',inventory:'Voorraad',detail:'Voertuig details',finance:'Financieel overzicht',export:'Advertentie-export',ai:'AI-assistent'};
-  document.getElementById('topbar-title').textContent=titleMap[v]||v;
-  if(v==='dashboard')renderDashboard();
-  if(v==='inventory')renderInventory();
-  if(v==='finance')renderFinance();
-  if(v==='export')renderExport();
-  if(v==='ai')renderAI();
-  window.scrollTo(0,0);
-}
-function openSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('sidebar-overlay').classList.add('open');document.body.style.overflow='hidden'}
-function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('open');document.body.style.overflow=''}
-function setTheme(t,btn){document.documentElement.setAttribute('data-theme',t);document.querySelectorAll('.theme-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active')}
-function openModal(id){document.getElementById(id).classList.add('open');document.body.style.overflow='hidden'}
-function appCloseModal(id){document.getElementById(id).classList.remove('open');document.body.style.overflow=''}
-function openRdw(){document.getElementById('rdw-input').value='';document.getElementById('rdw-result').classList.remove('show');openModal('rdw-modal');setTimeout(()=>document.getElementById('rdw-input').focus(),150)}
-
-const rdwData={'K-123-XP':{status:'Geen bijzonderheden',ok:true,merk:'Volkswagen',model:'Golf',bouwjaar:'2022',kleur:'Wit',apk:'01-03-2026',gewicht:'1.380 kg',cilinderinhoud:'1.498 cc',vermogen:'110 kW'},'L-456-RB':{status:'Geen bijzonderheden',ok:true,merk:'BMW',model:'3-serie',bouwjaar:'2021',kleur:'Blauw',apk:'15-06-2025',gewicht:'1.610 kg',cilinderinhoud:'1.998 cc',vermogen:'135 kW'}};
-function doRdwCheck(){
-  const raw=document.getElementById('rdw-input').value.replace(/\s/g,'').toUpperCase();
-  const data=rdwData[raw];
-  const result=document.getElementById('rdw-result');
-  if(data){
-    document.getElementById('rdw-dot').style.cssText=`background:${data.ok?'var(--green)':'var(--red)'};box-shadow:0 0 8px ${data.ok?'var(--green)':'var(--red)'}`;
-    document.getElementById('rdw-status-label').textContent=data.status;
-    document.getElementById('rdw-status-sub').textContent=`APK geldig t/m ${data.apk} · Geen diefstalmelding`;
-    document.getElementById('rdw-rows').innerHTML=[['Merk',data.merk],['Model',data.model],['Bouwjaar',data.bouwjaar],['Kleur',data.kleur],['Gewicht',data.gewicht],['Cilinderinhoud',data.cilinderinhoud],['Vermogen',data.vermogen],['APK t/m',data.apk]].map(([k,v])=>`<div class="rdw-row"><div class="rdw-key">${k}</div><div class="rdw-val">${v}</div></div>`).join('');
-  }else{
-    document.getElementById('rdw-dot').style.cssText='background:var(--text3);box-shadow:none';
-    document.getElementById('rdw-status-label').textContent='Geen resultaat';
-    document.getElementById('rdw-status-sub').textContent='Probeer K-123-XP of L-456-RB (demo)';
-    document.getElementById('rdw-rows').innerHTML='';
-  }
-  result.classList.add('show');
-}
-document.getElementById('rdw-input').addEventListener('keydown',e=>{if(e.key==='Enter')doRdwCheck()});
-
-renderDashboard();
-
-
-/* ── Auth / routing JS ── */
-// ═══════════════════════════════════════
-//  SUPABASE CONFIG  ← verander deze twee regels
-// ═══════════════════════════════════════
-const SB_URL = 'https://ysnsiidgpvnaiasapzjg.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlzbnNpaWRncHZuYWlhc2FwempnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxNzk1MjksImV4cCI6MjA4ODc1NTUyOX0.UVS5EUhrlJznIYkG5pF-SDb2EaEo2qL1FsYgcXuN2yc';
-
-const { createClient } = supabase;
-const sb = createClient(SB_URL, SB_KEY);
-
-// ═══════════════════════════════════════
-//  VIEW ROUTING
-// ═══════════════════════════════════════
-function showView(id) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.getElementById('view-' + id).classList.add('active');
-  // Verberg bg effecten op app/admin (tonen wel op login)
-  document.querySelector('.bg-grid').style.display = id === 'login' ? 'block' : 'none';
-  document.querySelector('.bg-glow').style.display = id === 'login' ? 'block' : 'none';
-}
-
-// ═══════════════════════════════════════
-//  INIT — check sessie bij laden
-// ═══════════════════════════════════════
-(async () => {
-  const { data: { session } } = await sb.auth.getSession();
-  if (session) {
-    await routeUser(session.user);
-  }
-})();
-
-async function routeUser(user) {
-  const { data: profile } = await sb
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-
-  if (!profile || profile.status === 'pending') {
-    await sb.auth.signOut();
-    showView('login');
-    document.getElementById('l-pending').classList.add('show');
-    return;
-  }
-  if (profile.status === 'revoked') {
-    await sb.auth.signOut();
-    showView('login');
-    document.getElementById('l-revoked').classList.add('show');
-    return;
-  }
-
-  if (profile.role === 'admin') {
-    // Admin → beheerpaneel
-    const initials = (profile.first_name?.[0] || 'A').toUpperCase();
-    document.getElementById('a-av').textContent = initials;
-    document.getElementById('a-uname').textContent = profile.first_name + ' ' + profile.last_name;
-    showView('admin');
-    await loadAdminData();
-  } else {
-    // Gewone gebruiker → app
-    const hour = new Date().getHours();
-    const greeting = hour < 12 ? 'Goedemorgen' : hour < 18 ? 'Goedemiddag' : 'Goedenavond';
-    document.getElementById('u-welcome').textContent = greeting + ', ' + profile.first_name;
-    document.getElementById('u-av').textContent = (profile.first_name?.[0] || 'U').toUpperCase();
-    document.getElementById('u-uname').textContent = profile.first_name + ' ' + profile.last_name;
-    showView('app');
-  }
-}
-
-// ═══════════════════════════════════════
-//  AUTH — INLOGGEN
-// ═══════════════════════════════════════
-async function doLogin() {
-  clearAlerts('l-');
-  const email = document.getElementById('l-email').value.trim();
-  const pwd   = document.getElementById('l-pwd').value;
-
-  if (!email || !pwd) {
-    showAlert('l-err', 'Vul je e-mailadres en wachtwoord in.');
-    return;
-  }
-
-  setBtn('l-btn', true, 'Bezig…');
-  try {
-    const { data, error } = await sb.auth.signInWithPassword({ email, password: pwd });
-    if (error) throw error;
-    await routeUser(data.user);
-  } catch(e) {
-    showAlert('l-err', 'Fout: ' + e.message);
-  } finally {
-    setBtn('l-btn', false, 'Inloggen');
-  }
-}
-
-// ═══════════════════════════════════════
-//  AUTH — REGISTREREN
-// ═══════════════════════════════════════
-async function doRegister() {
-  clearFieldErrors();
-  hideEl('r-err');
-
-  const first   = v('r-first'), last  = v('r-last');
-  const company = v('r-company'), type = v('r-type');
-  const email   = v('r-email'),  phone = v('r-phone');
-  const pwd     = v('r-pwd'),    pwd2  = v('r-pwd2');
-
-  let ok = true;
-  if (!first)                       { fieldErr('r-first','e-first');   ok=false }
-  if (!last)                        { fieldErr('r-last','e-last');     ok=false }
-  if (!company)                     { fieldErr('r-company','e-company');ok=false }
-  if (!type)                        { fieldErr('r-type','e-type');     ok=false }
-  if (!email || !email.includes('@')){ fieldErr('r-email','e-email');  ok=false }
-  if (pwd.length < 8)               { fieldErr('r-pwd','e-pwd');       ok=false }
-  if (pwd !== pwd2)                 { fieldErr('r-pwd2','e-pwd2');     ok=false }
-  if (!ok) return;
-
-  setBtn('r-btn', true, 'Bezig…');
-  try {
-    const { error } = await sb.auth.signUp({
-      email, password: pwd,
-      options: { data: { first_name:first, last_name:last, company, company_type:type, phone } }
-    });
-    if (error) {
-      if (error.message.includes('already registered')) {
-        showAlert('r-err', 'Dit e-mailadres is al geregistreerd.');
-      } else throw error;
-      return;
-    }
-    // Succes
-    document.getElementById('r-pending-email').textContent = email;
-    document.getElementById('r-fields').style.display = 'none';
-    document.getElementById('r-pending').classList.add('show');
-  } catch(e) {
-    showAlert('r-err', 'Er ging iets mis. Probeer het opnieuw.');
-  } finally {
-    setBtn('r-btn', false, 'Aanvraag indienen');
-  }
-}
-
-// ═══════════════════════════════════════
-//  AUTH — UITLOGGEN
-// ═══════════════════════════════════════
-async function doLogout() {
-  await sb.auth.signOut();
-  clearAlerts('l-');
-  showView('login');
-}
-
-// ═══════════════════════════════════════
-//  WACHTWOORD VERGETEN
-// ═══════════════════════════════════════
-async function forgotPw(e) {
-  e.preventDefault();
-  const email = document.getElementById('l-email').value.trim();
-  if (!email) { showAlert('l-err', 'Vul eerst je e-mailadres in.'); return; }
-  await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/?reset=1' });
-  const el = document.getElementById('l-err');
-  el.className = 'alert alert-ok show';
-  el.textContent = '✓ Controleer je e-mail voor een resetlink.';
-}
-
-// ═══════════════════════════════════════
-//  TAB SWITCH
-// ═══════════════════════════════════════
-function switchTab(t) {
-  document.querySelectorAll('.tab').forEach((el,i) =>
-    el.classList.toggle('active', (i===0&&t==='login')||(i===1&&t==='register')));
-  document.getElementById('aform-login').classList.toggle('active', t==='login');
-  document.getElementById('aform-register').classList.toggle('active', t==='register');
-}
-
-// ═══════════════════════════════════════
-//  ADMIN — DATA
-// ═══════════════════════════════════════
-let allUsers = [], filterStatus = 'alle', searchQ = '';
-const typeLabels = {dealer:'Dealer',garage:'Garage',inkoper:'Inkoper',veiling:'Veiling',ander:'Anders'};
-
-async function loadAdminData() {
-  const [{ data: users }, { data: log }] = await Promise.all([
-    sb.from('v_users').select('*').order('aangevraagd_op', { ascending: false }),
-    sb.from('admin_log').select('*').order('aangemaakt_op', { ascending: false }).limit(25)
-  ]);
-  allUsers = users || [];
-  renderKpis();
-  renderUsers();
-  renderLog(log || []);
-}
-
-function renderKpis() {
-  const p = allUsers.filter(u=>u.status==='pending').length;
-  const a = allUsers.filter(u=>u.status==='approved').length;
-  const r = allUsers.filter(u=>u.status==='revoked').length;
-  document.getElementById('kpi-row').innerHTML = `
-    <div class="kpi ky"><div class="kpi-lbl">In afwachting</div><div class="kpi-val">${p}</div><div class="kpi-sub">Wachten op beoordeling</div></div>
-    <div class="kpi kg"><div class="kpi-lbl">Goedgekeurd</div><div class="kpi-val">${a}</div><div class="kpi-sub">Actieve gebruikers</div></div>
-    <div class="kpi kr"><div class="kpi-lbl">Ingetrokken</div><div class="kpi-val">${r}</div><div class="kpi-sub">Geblokkeerd</div></div>
-    <div class="kpi kb"><div class="kpi-lbl">Totaal</div><div class="kpi-val">${allUsers.length}</div><div class="kpi-sub">Alle aanvragen</div></div>`;
-}
-
-function renderUsers() {
-  const list = allUsers.filter(u => {
-    const ms = filterStatus === 'alle' || u.status === filterStatus;
-    const q  = searchQ.toLowerCase();
-    const mt = !q || (u.full_name||'').toLowerCase().includes(q)
-                  || (u.company||'').toLowerCase().includes(q)
-                  || (u.email||'').toLowerCase().includes(q);
-    return ms && mt;
-  });
-
-  const tb = document.getElementById('utbody');
-  if (!list.length) {
-    tb.innerHTML = `<tr><td colspan="7"><div class="empty-row">Geen gebruikers gevonden</div></td></tr>`;
-    return;
-  }
-
-  const bdg = s => {
-    const cls={pending:'badge-p',approved:'badge-a',revoked:'badge-r'};
-    const lbl={pending:'In afwachting',approved:'Goedgekeurd',revoked:'Ingetrokken'};
-    return `<span class="badge ${cls[s]||'badge-p'}">${lbl[s]||s}</span>`;
-  };
-  const fmtDate = d => d ? new Date(d).toLocaleDateString('nl-NL',{day:'2-digit',month:'2-digit',year:'numeric'}) : '—';
-  const esc = s => (s||'').replace(/'/g,"\\'");
-
-  tb.innerHTML = list.map(u => `
-    <tr>
-      <td><span class="td-name">${u.full_name||'—'}</span></td>
-      <td><span class="td-co">${u.company||'—'}</span></td>
-      <td style="font-size:12.5px">${u.email}</td>
-      <td style="font-size:12px;color:var(--text2)">${typeLabels[u.company_type]||'—'}</td>
-      <td><span class="td-mono">${fmtDate(u.aangevraagd_op)}</span></td>
-      <td>${bdg(u.status)}</td>
-      <td><div class="acts">
-        ${u.status!=='approved' ? `<button class="b-ok" onclick="doConfirm('${u.id}','approve','${esc(u.full_name)}')">✓ Goedkeuren</button>` : ''}
-        ${u.status==='approved'  ? `<button class="b-no" onclick="doConfirm('${u.id}','revoke','${esc(u.full_name)}')">✕ Intrekken</button>` : ''}
-        ${u.status==='revoked'   ? `<button class="b-ok" onclick="doConfirm('${u.id}','approve','${esc(u.full_name)}')">↺ Herstellen</button>` : ''}
-        <button class="b-del" onclick="doConfirm('${u.id}','delete','${esc(u.full_name)}')">🗑</button>
-      </div></td>
-    </tr>`).join('');
-}
-
-function renderLog(log) {
-  document.getElementById('log-meta').textContent = log.length + ' acties';
-  const colors = {Goedgekeurd:'var(--green)',Ingetrokken:'var(--red)',Verwijderd:'var(--orange)'};
-  document.getElementById('logtbody').innerHTML = log.map(l => `
-    <tr>
-      <td class="td-mono">${new Date(l.aangemaakt_op).toLocaleString('nl-NL',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
-      <td><span style="font-weight:600;color:${colors[l.actie]||'var(--text)'}">${l.actie}</span></td>
-      <td>${l.doel_naam||'—'}</td>
-    </tr>`).join('') || `<tr><td colspan="3"><div class="empty-row">Nog geen acties</div></td></tr>`;
-}
-
-function filterUsers(q) { searchQ = q; renderUsers(); }
-function setFilter(s, el) {
-  filterStatus = s;
-  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-  el.classList.add('active');
-  renderUsers();
-}
-
-// ═══════════════════════════════════════
-//  ADMIN — ACTIES
-// ═══════════════════════════════════════
-let pendingAct = null;
-
-function doConfirm(id, action, name) {
-  const titles = {approve:'Toegang goedkeuren',revoke:'Toegang intrekken',delete:'Gebruiker verwijderen'};
-  const texts  = {
-    approve:`Wil je <strong>${name}</strong> goedkeuren? Ze kunnen direct inloggen.`,
-    revoke: `Wil je de toegang van <strong>${name}</strong> intrekken?`,
-    delete: `Wil je <strong>${name}</strong> definitief verwijderen? Dit is onomkeerbaar.`,
-  };
-  document.getElementById('m-title').textContent = titles[action];
-  document.getElementById('m-text').innerHTML = texts[action];
-  const btn = document.getElementById('m-confirm');
-  btn.textContent = action==='approve'?'Goedkeuren':action==='revoke'?'Intrekken':'Verwijderen';
-  btn.style.background = action==='approve'?'var(--green)':'var(--red)';
-  btn.style.color = action==='approve'?'#000':'#fff';
-  pendingAct = {id, action, name};
-  document.getElementById('mback').classList.add('open');
-}
-
-document.getElementById('m-confirm').addEventListener('click', async () => {
-  if (!pendingAct) return;
-  const {id, action, name} = pendingAct;
-  closeModal();
-
-  try {
-    if (action === 'approve' || action === 'revoke') {
-      const status = action === 'approve' ? 'approved' : 'revoked';
-      await sb.from('profiles').update({ status }).eq('id', id);
-      await sb.from('admin_log').insert({ actie: action==='approve'?'Goedgekeurd':'Ingetrokken', doel_user: id, doel_naam: name });
-      toast(action==='approve' ? `✓ ${name} heeft toegang` : `✕ Toegang ingetrokken`, action==='approve'?'var(--green)':'var(--red)');
-    } else {
-      await sb.from('profiles').delete().eq('id', id);
-      await sb.from('admin_log').insert({ actie: 'Verwijderd', doel_user: null, doel_naam: name });
-      toast(`🗑 ${name} verwijderd`, 'var(--orange)');
-    }
-    await loadAdminData();
-  } catch(e) {
-    toast('Fout: ' + e.message, 'var(--red)');
-  }
-  pendingAct = null;
-});
-
-function closeModal() {
-  document.getElementById('mback').classList.remove('open');
-  pendingAct = null;
-}
-document.getElementById('mback').addEventListener('click', e => { if (e.target===e.currentTarget) closeModal(); });
-
-// ═══════════════════════════════════════
-//  HELPERS
-// ═══════════════════════════════════════
-function v(id) { return document.getElementById(id)?.value.trim() || ''; }
-function setBtn(id, dis, label) { const b=document.getElementById(id); b.disabled=dis; b.textContent=label; }
-function showAlert(id, msg) { const el=document.getElementById(id); el.textContent=msg; el.classList.add('show'); }
-function hideEl(id) { document.getElementById(id)?.classList.remove('show'); }
 function clearAlerts(prefix) {
-  document.querySelectorAll('[id^="'+prefix+'"]').forEach(el => {
-    el.classList.remove('show');
-    if (el.tagName !== 'INPUT') el.className = el.className.replace(/alert-\w+/,'alert');
+  document.querySelectorAll(`[id^="${prefix}"]`).forEach(e => {
+    e.classList.remove('show');
+    if(e.tagName!=='INPUT') e.className = e.className.replace(/alert-\w+/,'alert');
   });
 }
 function clearFieldErrors() {
   document.querySelectorAll('.field-err').forEach(e=>e.classList.remove('show'));
   document.querySelectorAll('.inp').forEach(e=>e.classList.remove('err'));
 }
-function fieldErr(inpId, errId) {
-  document.getElementById(inpId)?.classList.add('err');
-  document.getElementById(errId)?.classList.add('show');
-}
-function togglePw(id, btn) {
-  const i = document.getElementById(id);
-  const show = i.type==='password';
-  i.type = show ? 'text' : 'password';
-  btn.textContent = show ? '🙈' : '👁';
-}
-function toast(msg, color='var(--green)') {
-  document.getElementById('t-txt').textContent = msg;
-  document.getElementById('t-dot').style.background = color;
-  const el = document.getElementById('toast');
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 3200);
+function fieldErr(inpId,errId) { el(inpId)?.classList.add('err'); el(errId)?.classList.add('show'); }
+
+/* ══════════════════════════════════════════
+   VIEWS
+══════════════════════════════════════════ */
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  el('view-'+id).classList.add('active');
+  const showBg = id === 'login';
+  document.querySelector('.bg-grid').style.display = showBg ? 'block' : 'none';
+  document.querySelector('.bg-glow').style.display = showBg ? 'block' : 'none';
 }
 
-// Enter key op loginscherm
-document.addEventListener('keydown', e => {
-  if (e.key !== 'Enter') return;
-  if (!document.getElementById('view-login').classList.contains('active')) return;
-  if (document.getElementById('aform-login').classList.contains('active')) doLogin();
+/* ══════════════════════════════════════════
+   INIT (sessie check)
+══════════════════════════════════════════ */
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) await routeUser(session.user);
+})();
+
+async function routeUser(user) {
+  const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
+  if (!profile || profile.status === 'pending') {
+    await sb.auth.signOut(); showView('login');
+    el('l-pending').classList.add('show'); return;
+  }
+  if (profile.status === 'revoked') {
+    await sb.auth.signOut(); showView('login');
+    el('l-revoked').classList.add('show'); return;
+  }
+  if (profile.role === 'admin') {
+    el('a-av').textContent = (profile.first_name?.[0]||'A').toUpperCase();
+    el('a-uname').textContent = profile.first_name + ' ' + profile.last_name;
+    showView('admin'); await loadAdminData();
+  } else {
+    // Vul sidebar gebruikersinfo in
+    const initials = (profile.first_name?.[0]||'U').toUpperCase();
+    el('sb-av').textContent   = initials;
+    el('sb-name').textContent = profile.first_name + ' ' + profile.last_name;
+    el('sb-role').textContent = (profile.company || 'AutoPanel');
+    showView('app');
+    appShowView('dashboard');
+  }
+}
+
+/* ══════════════════════════════════════════
+   AUTH — LOGIN
+══════════════════════════════════════════ */
+async function doLogin() {
+  clearAlerts('l-');
+  const email = el('l-email').value.trim();
+  const pwd   = el('l-pwd').value;
+  if (!email || !pwd) { showAlert('l-err','Vul je e-mailadres en wachtwoord in.'); return; }
+  setBtn('l-btn',true,'Bezig…');
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: pwd });
+    if (error) throw error;
+    await routeUser(data.user);
+  } catch(e) {
+    const msg = e.message.includes('Invalid login') ? 'Onjuist e-mailadres of wachtwoord.' : 'Fout: ' + e.message;
+    showAlert('l-err', msg);
+  } finally { setBtn('l-btn',false,'Inloggen'); }
+}
+
+/* ══════════════════════════════════════════
+   AUTH — REGISTREREN
+══════════════════════════════════════════ */
+async function doRegister() {
+  clearFieldErrors(); hideEl('r-err');
+  const first=v('r-first'),last=v('r-last'),company=v('r-company'),type=v('r-type');
+  const email=v('r-email'),phone=v('r-phone'),pwd=v('r-pwd'),pwd2=v('r-pwd2');
+  let ok=true;
+  if(!first){fieldErr('r-first','e-first');ok=false}
+  if(!last){fieldErr('r-last','e-last');ok=false}
+  if(!company){fieldErr('r-company','e-company');ok=false}
+  if(!type){fieldErr('r-type','e-type');ok=false}
+  if(!email||!email.includes('@')){fieldErr('r-email','e-email');ok=false}
+  if(pwd.length<8){fieldErr('r-pwd','e-pwd');ok=false}
+  if(pwd!==pwd2){fieldErr('r-pwd2','e-pwd2');ok=false}
+  if(!ok) return;
+  setBtn('r-btn',true,'Bezig…');
+  try {
+    const { error } = await sb.auth.signUp({
+      email, password: pwd,
+      options: { data: { first_name:first, last_name:last, company, company_type:type, phone } }
+    });
+    if (error) {
+      if (error.message.includes('already registered')) showAlert('r-err','Dit e-mailadres is al geregistreerd.');
+      else throw error;
+      return;
+    }
+    el('r-pending-email').textContent = email;
+    el('r-fields').style.display = 'none';
+    el('r-pending').classList.add('show');
+  } catch(e) { showAlert('r-err','Er ging iets mis. Probeer het opnieuw.'); }
+  finally { setBtn('r-btn',false,'Aanvraag indienen'); }
+}
+
+/* ══════════════════════════════════════════
+   AUTH — UITLOGGEN & WACHTWOORD VERGETEN
+══════════════════════════════════════════ */
+async function doLogout() {
+  await sb.auth.signOut(); clearAlerts('l-'); showView('login');
+}
+async function forgotPw(e) {
+  e.preventDefault();
+  const email = el('l-email').value.trim();
+  if (!email) { showAlert('l-err','Vul eerst je e-mailadres in.'); return; }
+  await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/?reset=1' });
+  const box = el('l-err'); box.className='alert alert-ok show';
+  box.textContent='✓ Controleer je e-mail voor een resetlink.';
+}
+
+/* ══════════════════════════════════════════
+   TAB SWITCH
+══════════════════════════════════════════ */
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach((tab,i)=>tab.classList.toggle('active',(i===0&&t==='login')||(i===1&&t==='register')));
+  el('aform-login').classList.toggle('active',t==='login');
+  el('aform-register').classList.toggle('active',t==='register');
+}
+
+/* ══════════════════════════════════════════
+   APP — NAVIGATIE
+══════════════════════════════════════════ */
+const titleMap = {dashboard:'Dashboard',inventory:'Voorraad',detail:'Voertuig details',finance:'Financieel overzicht',export:'Advertentie-export',ai:'AI-assistent'};
+
+function appShowView(v) {
+  document.querySelectorAll('.app-view').forEach(e=>e.classList.remove('active'));
+  el('app-view-'+v)?.classList.add('active');
+  document.querySelectorAll('.sb-item[id^="nav-"]').forEach(e=>e.classList.remove('active'));
+  el('nav-'+v)?.classList.add('active');
+  el('topbar-title').textContent = titleMap[v] || v;
+  if(v==='dashboard') renderDashboard();
+  if(v==='inventory') renderInventory();
+  if(v==='finance')   renderFinance();
+  if(v==='export')    renderExport();
+  if(v==='ai')        renderAI();
+  window.scrollTo(0,0);
+}
+function openSidebar()  { el('sidebar').classList.add('open'); el('sidebar-overlay').classList.add('open'); document.body.style.overflow='hidden'; }
+function closeSidebar() { el('sidebar').classList.remove('open'); el('sidebar-overlay').classList.remove('open'); document.body.style.overflow=''; }
+function setTheme(t,btn){ document.documentElement.setAttribute('data-theme',t); document.querySelectorAll('.theme-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
+function openModal(id)      { el(id).classList.add('open'); document.body.style.overflow='hidden'; }
+function appCloseModal(id)  { el(id).classList.remove('open'); document.body.style.overflow=''; }
+function openRdw() { el('rdw-input').value=''; el('rdw-result').classList.remove('show'); openModal('rdw-modal'); setTimeout(()=>el('rdw-input').focus(),150); }
+
+/* ══════════════════════════════════════════
+   DASHBOARD
+══════════════════════════════════════════ */
+function renderDashboard() {
+  const maxV = Math.max(...inkoop,...verkoop);
+  el('bar-chart').innerHTML = months.map((m,i)=>`<div class="bar-group"><div class="bar primary" style="height:${Math.round(inkoop[i]/maxV*100)}%"></div><div class="bar secondary" style="height:${Math.round(verkoop[i]/maxV*100)}%"></div><div class="bar-label">${m}</div></div>`).join('');
+  const maxB = brands[0].count;
+  el('brand-list').innerHTML = brands.map(b=>`<div class="brand-row"><div class="brand-name">${b.name}</div><div class="brand-bar-wrap"><div class="brand-bar-fill" style="width:0%" data-w="${Math.round(b.count/maxB*100)}%"></div></div><div class="brand-count">${b.count}</div></div>`).join('');
+  setTimeout(()=>document.querySelectorAll('.brand-bar-fill').forEach(e=>{e.style.width=e.dataset.w}),80);
+  el('recent-table').innerHTML = cars.slice(0,6).map(c=>`<tr onclick="showDetail(${c.id})"><td class="td-main">${c.make} ${c.model}</td><td><span style="font-size:13px;font-weight:500;color:var(--text);letter-spacing:.4px">${c.kenteken}</span></td><td>${c.year}</td><td>${fmt(c.km)} km</td><td style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--text)">€ ${fmt(c.price)}</td><td>${statusBadge(c.status)}</td><td><span style="font-size:13px;font-weight:500;color:${c.days>60?'var(--red)':c.days>30?'var(--orange)':'var(--text2)'}">${c.days}d</span></td></tr>`).join('');
+}
+
+/* ══════════════════════════════════════════
+   VOORRAAD
+══════════════════════════════════════════ */
+function getFiltered() { return cars.filter(c=>(currentFilter==='Alle'||c.status===currentFilter)&&(c.make+' '+c.model+' '+c.kenteken).toLowerCase().includes(currentSearch.toLowerCase())); }
+function renderInventory() {
+  const list = getFiltered();
+  el('inv-count').textContent = list.length + ' voertuigen';
+  el('car-grid').innerHTML = list.map((c,i)=>`<div class="car-card" style="animation-delay:${i*.04}s" onclick="showDetail(${c.id})"><div class="car-img"><span style="position:relative;z-index:1">${c.emoji}</span><div class="car-img-overlay"></div><div class="car-img-badge">${statusBadge(c.status)}</div></div><div class="car-body"><div class="car-make">${c.make}</div><div class="car-model">${c.model}</div><div class="car-specs"><span class="spec-item">${c.year}</span><span class="spec-item"><span class="spec-dot"></span>${fmt(c.km)} km</span><span class="spec-item"><span class="spec-dot"></span>${c.fuel}</span></div><div class="car-footer"><div class="car-price">€ ${fmt(c.price)} <small>excl.</small></div><div class="car-days">${c.days}d in stock</div></div></div></div>`).join('');
+}
+function filterCars(q)       { currentSearch=q; renderInventory(); }
+function appSetFilter(e,s)   { document.querySelectorAll('.filter-chip').forEach(x=>x.classList.remove('active')); e.classList.add('active'); currentFilter=s; renderInventory(); }
+function setGridView(g)      { el('grid-btn').classList.toggle('active',g); el('list-btn').classList.toggle('active',!g); el('car-grid').style.gridTemplateColumns=g?'repeat(auto-fill,minmax(268px,1fr))':'1fr'; }
+
+/* ══════════════════════════════════════════
+   DETAIL
+══════════════════════════════════════════ */
+function showDetail(id) {
+  const c = cars.find(x=>x.id===id);
+  el('d-make').textContent = c.make.toUpperCase();
+  el('d-model').textContent = c.model;
+  el('d-price').innerHTML = `€ ${fmt(c.price)} <small>excl. BTW</small>`;
+  el('d-badges').innerHTML = statusBadge(c.status)+`<span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)">${c.kenteken}</span>`;
+  el('detail-hero').innerHTML = `<span style="font-size:88px;position:relative;z-index:1">${c.emoji}</span><div style="position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%,rgba(232,240,60,.06) 0%,transparent 60%)"></div>`;
+  el('detail-thumbs').innerHTML = [c.emoji,'🚘','⚙','📋'].map((e,i)=>`<div class="thumb ${i===0?'active':''}" onclick="this.parentNode.querySelectorAll('.thumb').forEach(t=>t.classList.remove('active'));this.classList.add('active')">${e}</div>`).join('');
+  el('d-specs').innerHTML = [['Bouwjaar',c.year],['Kleur',c.color],['KM-stand',fmt(c.km)+' km'],['Brandstof',c.fuel],['Transmissie',c.trans],['Kenteken',c.kenteken],['Dagen in stock',c.days+'d'],['Marge','€ '+fmt(marge(c))+' ('+margePct(c)+'%)']].map(([k,v])=>`<div class="spec-row"><div class="spec-key">${k}</div><div class="spec-val">${v}</div></div>`).join('');
+  currentAiCar = c;
+  appShowView('detail');
+}
+
+/* ══════════════════════════════════════════
+   FINANCIEEL
+══════════════════════════════════════════ */
+function renderFinance() {
+  const totO=omzet.reduce((a,b)=>a+b,0),totK=kosten.reduce((a,b)=>a+b,0),totW=totO-totK,gm=Math.round(totW/totO*100);
+  el('fin-kpis').innerHTML=`
+    <div class="kpi-card green" style="animation-delay:.05s"><div class="kpi-label">YTD Omzet</div><div class="kpi-value">€${Math.round(totO/1000)}K</div><div class="kpi-sub"><span class="kpi-delta up">▲ +14%</span> t.o.v. vorig jaar</div></div>
+    <div class="kpi-card yellow" style="animation-delay:.10s"><div class="kpi-label">Bruto winst</div><div class="kpi-value">€${Math.round(totW/1000)}K</div><div class="kpi-sub"><span class="kpi-delta up">▲ +9%</span> t.o.v. vorig jaar</div></div>
+    <div class="kpi-card blue" style="animation-delay:.15s"><div class="kpi-label">Gem. marge</div><div class="kpi-value">${gm}%</div><div class="kpi-sub"><span class="kpi-delta up">▲ +1.2pp</span> t.o.v. vorig jaar</div></div>
+    <div class="kpi-card red" style="animation-delay:.20s"><div class="kpi-label">Negatieve marge</div><div class="kpi-value">3</div><div class="kpi-sub">voertuigen onder kostprijs</div></div>`;
+  el('margin-table').innerHTML = cars.map(c=>{const m=marge(c),pct=margePct(c),pos=m>=0;return`<tr onclick="showDetail(${c.id})"><td class="td-main">${c.make} ${c.model}</td><td>€ ${fmt(c.inkoop)}</td><td>€ ${fmt(c.price)}</td><td style="font-weight:600;color:${pos?'var(--green)':'var(--red)'}">€ ${fmt(m)}</td><td><span style="font-weight:600;color:${pos?'var(--green)':'var(--red)'}">${pct}%</span><div class="margin-bar" style="width:${Math.min(Math.abs(pct)*2,100)}%;background:${pos?'var(--green)':'var(--red)'}"></div></td></tr>`}).join('');
+  const maxO=Math.max(...omzet);
+  el('fin-chart-body').innerHTML=`<div class="bar-chart" style="height:130px">${months.map((m,i)=>`<div class="bar-group"><div class="bar primary" style="height:${Math.round(omzet[i]/maxO*100)}%;background:var(--green)"></div><div class="bar secondary" style="height:${Math.round(kosten[i]/maxO*100)}%"></div><div class="bar-label">${m}</div></div>`).join('')}</div><div class="chart-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Omzet</div><div class="legend-item"><div class="legend-dot" style="background:var(--surface3);border:1px solid var(--border2)"></div>Kosten</div></div>`;
+  el('pl-table').innerHTML=months.map((m,i)=>{const w=omzet[i]-kosten[i],p=Math.round(w/omzet[i]*100),trend=i>0?(omzet[i]>omzet[i-1]?'<span style="color:var(--green)">▲</span>':'<span style="color:var(--red)">▼</span>'):'—';return`<tr><td class="td-main">${m} 2025</td><td>€ ${fmt(omzet[i])}</td><td>€ ${fmt(kosten[i])}</td><td style="font-weight:600;color:var(--green)">€ ${fmt(w)}</td><td style="font-weight:600">${p}%</td><td>${trend}</td></tr>`}).join('');
+}
+
+/* ══════════════════════════════════════════
+   EXPORT
+══════════════════════════════════════════ */
+function renderExport() {
+  el('export-car-select').innerHTML = cars.map(c=>`<option value="${c.id}">${c.make} ${c.model} (${c.kenteken})</option>`).join('');
+  el('platform-list').innerHTML = platforms.map(p=>`<div class="platform-card ${p.id===selectedPlatform?'selected':''}" onclick="selectPlatform('${p.id}',this)"><span class="platform-check">✓</span><div style="display:flex;align-items:center;gap:10px"><div style="font-size:22px">${p.icon}</div><div><div class="platform-name">${p.name}</div><div class="platform-desc">${p.desc}</div></div></div></div>`).join('');
+  updateExport();
+}
+function selectPlatform(id,e) {
+  selectedPlatform=id;
+  document.querySelectorAll('.platform-card').forEach(c=>c.classList.remove('selected'));
+  e.classList.add('selected'); updateExport();
+}
+function updateExport() {
+  const id=parseInt(el('export-car-select').value)||cars[0].id;
+  const c=cars.find(x=>x.id===id)||cars[0];
+  el('export-title').value=`${c.make} ${c.model} ${c.year} — ${fmt(c.km)} km — ${c.fuel}`;
+  el('export-body').value=`Te koop: ${c.make} ${c.model} (${c.year})\n\nDeze ${c.color.toLowerCase()} ${c.make} ${c.model} is in uitstekende staat. Met slechts ${fmt(c.km)} km op de teller is dit exemplaar nog lang niet klaar.\n\nSpecificaties:\n• Bouwjaar: ${c.year}\n• Kilometerstand: ${fmt(c.km)} km\n• Brandstof: ${c.fuel}\n• Transmissie: ${c.trans}\n• Kleur: ${c.color}\n• Kenteken: ${c.kenteken}\n\nPrijs: € ${fmt(c.price)} (excl. BTW)\n\nVoor meer informatie of een proefrit, neem gerust contact op!`;
+  el('export-specs-content').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:0">${[['Merk',c.make],['Model',c.model],['Bouwjaar',c.year],['KM-stand',fmt(c.km)+' km'],['Brandstof',c.fuel],['Transmissie',c.trans],['Kleur',c.color],['Kenteken',c.kenteken],['Vraagprijs','€ '+fmt(c.price)]].map(([k,v])=>`<div style="padding:7px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3);font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase">${k}</span><br><strong style="color:var(--text)">${v}</strong></div>`).join('')}</div>`;
+  el('export-prijs-content').innerHTML=`<div style="display:flex;flex-direction:column;gap:10px"><div style="padding:14px;background:var(--surface2);border:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-bottom:4px">VRAAGPRIJS</div><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:24px;color:var(--accent)">€ ${fmt(c.price)}</div><div style="font-size:11px;color:var(--text2)">excl. BTW</div></div><div style="padding:14px;background:var(--surface2);border:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-bottom:4px">BRUTO MARGE</div><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:var(--green)">€ ${fmt(marge(c))}</div><div style="font-size:11px;color:var(--text2)">${margePct(c)}% op inkoopprijs</div></div></div>`;
+}
+function switchExportTab(e,tab) {
+  document.querySelectorAll('.export-tab').forEach(t=>t.classList.remove('active')); e.classList.add('active');
+  ['tekst','specs','prijs'].forEach(t=>el('export-tab-'+t).style.display=t===tab?'block':'none');
+}
+function exportToClipboard() {
+  const txt = el('export-title').value + '\n\n' + el('export-body').value;
+  navigator.clipboard.writeText(txt).then(()=>{
+    const b=event.target; b.textContent='✓ Gekopieerd!'; setTimeout(()=>b.textContent='⎘ Kopiëren',2000);
+  }).catch(()=>alert('Kon niet kopiëren. Selecteer handmatig.'));
+}
+async function generateExportAI() {
+  const id=parseInt(el('export-car-select').value)||cars[0].id;
+  const c=cars.find(x=>x.id===id)||cars[0];
+  const btn=el('export-ai-btn'); btn.textContent='✦ Bezig…'; btn.disabled=true;
+  try {
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`Schrijf een professionele advertentietekst in het Nederlands voor een autodealer:\n\nMerk: ${c.make}, Model: ${c.model}, Jaar: ${c.year}, KM: ${fmt(c.km)}, Brandstof: ${c.fuel}, Transmissie: ${c.trans}, Kleur: ${c.color}, Prijs: € ${fmt(c.price)}\n\nMax 150 woorden. Aantrekkelijk en overtuigend. Eindig met call-to-action.`}]})});
+    const data=await resp.json();
+    el('export-body').value=data.content?.map(b=>b.text||'').join('')||'Fout bij genereren.';
+  } catch(e) { el('export-body').value='Verbindingsfout.'; }
+  btn.textContent='✦ Genereer met AI'; btn.disabled=false;
+}
+
+/* ══════════════════════════════════════════
+   AI ASSISTENT
+══════════════════════════════════════════ */
+function renderAI() {
+  const sel=el('ai-car-select');
+  sel.innerHTML=cars.map(c=>`<option value="${c.id}">${c.make} ${c.model} (${c.kenteken})</option>`).join('');
+  sel.onchange=()=>{currentAiCar=cars.find(x=>x.id===parseInt(sel.value))||cars[0]};
+}
+async function runAI(type) {
+  const c=cars.find(x=>x.id===parseInt(el('ai-car-select').value))||cars[0];
+  currentAiCar=c;
+  const prompts={
+    advertentie:`Schrijf een professionele advertentietekst in het Nederlands voor:\n${c.make} ${c.model} ${c.year}, ${fmt(c.km)} km, ${c.fuel}, ${c.trans}, ${c.color}, € ${fmt(c.price)} excl. BTW.\nMax 150 woorden. Vriendelijk en overtuigend. Eindig met call-to-action.`,
+    prijsadvies:`Geef een beknopt prijsadvies voor een ${c.make} ${c.model} uit ${c.year} met ${fmt(c.km)} km. Inkoop was € ${fmt(c.inkoop)}, huidige vraagprijs € ${fmt(c.price)}. Is de marge van ${margePct(c)}% realistisch? Geef 3 aanbevelingen. Max 120 woorden.`,
+    seo:`Schrijf een SEO-geoptimaliseerde omschrijving voor: ${c.make} ${c.model} ${c.year} ${c.fuel}. Verwerk relevante zoekwoorden. Max 120 woorden. Gericht op Nederlandse autodealers.`,
+    checklist:`Geef een inkoop-checklist van 8 punten voor een ${c.make} ${c.model} ${c.year} met ${fmt(c.km)} km. Focus op bekende zwakke punten. Elk punt max 1 zin.`
+  };
+  const labels={advertentie:'📝 Advertentietekst',prijsadvies:'💶 Prijsadvies',seo:'🔍 SEO-omschrijving',checklist:'✓ Inkoop checklist'};
+  const out=el('ai-output'),text=el('ai-output-text'),label=el('ai-output-label'),actions=el('ai-output-actions');
+  out.classList.add('show'); actions.style.display='none';
+  label.textContent='✦ '+labels[type];
+  text.innerHTML='<div class="ai-loading"><div class="ai-spinner"></div> Claude is aan het schrijven…</div>';
+  try {
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompts[type]}]})});
+    const data=await resp.json();
+    lastAiOutput=data.content?.map(b=>b.text||'').join('')||'Fout: geen antwoord.';
+    text.textContent=lastAiOutput; actions.style.display='flex';
+  } catch(e) { text.textContent='Verbindingsfout. Probeer opnieuw.'; }
+}
+function copyAiOutput() {
+  navigator.clipboard.writeText(lastAiOutput).then(()=>{
+    const b=el('copy-btn'); b.textContent='✓ Gekopieerd!'; b.classList.add('copy-flash');
+    setTimeout(()=>{b.textContent='⎘ Kopiëren';b.classList.remove('copy-flash')},2000);
+  });
+}
+function useInExport() { el('export-body').value=lastAiOutput; appShowView('export'); }
+
+/* ══════════════════════════════════════════
+   RDW CHECK
+══════════════════════════════════════════ */
+const rdwData = {
+  'K-123-XP':{status:'Geen bijzonderheden',ok:true,merk:'Volkswagen',model:'Golf',bouwjaar:'2022',kleur:'Wit',apk:'01-03-2026',gewicht:'1.380 kg',vermogen:'110 kW'},
+  'L-456-RB':{status:'Geen bijzonderheden',ok:true,merk:'BMW',model:'3-serie',bouwjaar:'2021',kleur:'Blauw',apk:'15-06-2025',gewicht:'1.610 kg',vermogen:'135 kW'},
+};
+function doRdwCheck() {
+  const raw=el('rdw-input').value.replace(/\s/g,'').toUpperCase();
+  const data=rdwData[raw], result=el('rdw-result');
+  if(data) {
+    el('rdw-dot').style.cssText=`width:10px;height:10px;border-radius:50%;background:${data.ok?'var(--green)':'var(--red)'};box-shadow:0 0 8px ${data.ok?'var(--green)':'var(--red)'}`;
+    el('rdw-status-label').textContent=data.status;
+    el('rdw-status-sub').textContent=`APK geldig t/m ${data.apk} · Geen diefstalmelding`;
+    el('rdw-rows').innerHTML=[['Merk',data.merk],['Model',data.model],['Bouwjaar',data.bouwjaar],['Kleur',data.kleur],['Gewicht',data.gewicht],['Vermogen',data.vermogen],['APK t/m',data.apk]].map(([k,v])=>`<div class="rdw-row"><div class="rdw-key">${k}</div><div class="rdw-val">${v}</div></div>`).join('');
+  } else {
+    el('rdw-dot').style.cssText='width:10px;height:10px;border-radius:50%;background:var(--text3)';
+    el('rdw-status-label').textContent='Geen resultaat';
+    el('rdw-status-sub').textContent='Probeer K-123-XP of L-456-RB (demo)';
+    el('rdw-rows').innerHTML='';
+  }
+  result.classList.add('show');
+}
+el('rdw-input').addEventListener('keydown',e=>{if(e.key==='Enter')doRdwCheck()});
+
+/* ══════════════════════════════════════════
+   ADMIN
+══════════════════════════════════════════ */
+let allUsers=[], filterStatus='alle', searchQ='';
+const typeLabels = {dealer:'Dealer',garage:'Garage',inkoper:'Inkoper',veiling:'Veiling',ander:'Anders'};
+
+async function loadAdminData() {
+  const [{data:users},{data:log}] = await Promise.all([
+    sb.from('v_users').select('*').order('aangevraagd_op',{ascending:false}),
+    sb.from('admin_log').select('*').order('aangemaakt_op',{ascending:false}).limit(25)
+  ]);
+  allUsers=users||[]; renderKpis(); renderUsers(); renderLog(log||[]);
+}
+function renderKpis() {
+  const p=allUsers.filter(u=>u.status==='pending').length;
+  const a=allUsers.filter(u=>u.status==='approved').length;
+  const r=allUsers.filter(u=>u.status==='revoked').length;
+  el('kpi-row').innerHTML=`
+    <div class="kpi ky"><div class="kpi-lbl">In afwachting</div><div class="kpi-val">${p}</div><div class="kpi-sub">Wachten op beoordeling</div></div>
+    <div class="kpi kg"><div class="kpi-lbl">Goedgekeurd</div><div class="kpi-val">${a}</div><div class="kpi-sub">Actieve gebruikers</div></div>
+    <div class="kpi kr"><div class="kpi-lbl">Ingetrokken</div><div class="kpi-val">${r}</div><div class="kpi-sub">Geblokkeerd</div></div>
+    <div class="kpi kb"><div class="kpi-lbl">Totaal</div><div class="kpi-val">${allUsers.length}</div><div class="kpi-sub">Alle aanvragen</div></div>`;
+}
+function renderUsers() {
+  const list=allUsers.filter(u=>{
+    const ms=filterStatus==='alle'||u.status===filterStatus;
+    const q=searchQ.toLowerCase();
+    const mt=!q||(u.full_name||'').toLowerCase().includes(q)||(u.company||'').toLowerCase().includes(q)||(u.email||'').toLowerCase().includes(q);
+    return ms&&mt;
+  });
+  const tb=el('utbody');
+  if(!list.length){tb.innerHTML=`<tr><td colspan="7"><div class="empty-row">Geen gebruikers gevonden</div></td></tr>`;return;}
+  const bdg=s=>{const cls={pending:'ubadge-p',approved:'ubadge-a',revoked:'ubadge-r'};const lbl={pending:'In afwachting',approved:'Goedgekeurd',revoked:'Ingetrokken'};return`<span class="ubadge ${cls[s]||'ubadge-p'}">${lbl[s]||s}</span>`;};
+  const fmtDate=d=>d?new Date(d).toLocaleDateString('nl-NL',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
+  const esc=s=>(s||'').replace(/'/g,"\\'");
+  tb.innerHTML=list.map(u=>`<tr><td><span class="td-name">${u.full_name||'—'}</span></td><td><span class="td-co">${u.company||'—'}</span></td><td style="font-size:12.5px">${u.email}</td><td style="font-size:12px;color:var(--text2)">${typeLabels[u.company_type]||'—'}</td><td><span class="td-mono">${fmtDate(u.aangevraagd_op)}</span></td><td>${bdg(u.status)}</td><td><div class="acts">${u.status!=='approved'?`<button class="b-ok" onclick="doConfirm('${u.id}','approve','${esc(u.full_name)}')">✓ Goedkeuren</button>`:''} ${u.status==='approved'?`<button class="b-no" onclick="doConfirm('${u.id}','revoke','${esc(u.full_name)}')">✕ Intrekken</button>`:''} ${u.status==='revoked'?`<button class="b-ok" onclick="doConfirm('${u.id}','approve','${esc(u.full_name)}')">↺ Herstellen</button>`:''}<button class="b-del" onclick="doConfirm('${u.id}','delete','${esc(u.full_name)}')">🗑</button></div></td></tr>`).join('');
+}
+function renderLog(log) {
+  el('log-meta').textContent=log.length+' acties';
+  const colors={Goedgekeurd:'var(--green)',Ingetrokken:'var(--red)',Verwijderd:'var(--orange)'};
+  el('logtbody').innerHTML=log.map(l=>`<tr><td class="td-mono">${new Date(l.aangemaakt_op).toLocaleString('nl-NL',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td><td><span style="font-weight:600;color:${colors[l.actie]||'var(--text)'}">${l.actie}</span></td><td>${l.doel_naam||'—'}</td></tr>`).join('')||`<tr><td colspan="3"><div class="empty-row">Nog geen acties</div></td></tr>`;
+}
+function filterUsers(q) { searchQ=q; renderUsers(); }
+function setFilter(s,e) { filterStatus=s; document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active')); e.classList.add('active'); renderUsers(); }
+
+/* ══════════════════════════════════════════
+   ADMIN ACTIES / MODAL
+══════════════════════════════════════════ */
+let pendingAct=null;
+function doConfirm(id,action,name) {
+  const titles={approve:'Toegang goedkeuren',revoke:'Toegang intrekken',delete:'Gebruiker verwijderen'};
+  const texts={approve:`Wil je <strong>${name}</strong> goedkeuren?`,revoke:`Wil je de toegang van <strong>${name}</strong> intrekken?`,delete:`Wil je <strong>${name}</strong> definitief verwijderen?`};
+  el('m-title').textContent=titles[action];
+  el('m-text').innerHTML=texts[action];
+  const btn=el('m-confirm');
+  btn.textContent=action==='approve'?'Goedkeuren':action==='revoke'?'Intrekken':'Verwijderen';
+  btn.style.background=action==='approve'?'var(--green)':'var(--red)';
+  btn.style.color=action==='approve'?'#000':'#fff';
+  pendingAct={id,action,name};
+  el('mback').classList.add('open');
+}
+el('m-confirm').addEventListener('click',async()=>{
+  if(!pendingAct) return;
+  const {id,action,name}=pendingAct;
+  closeAdminModal();
+  try {
+    if(action==='approve'||action==='revoke'){
+      const status=action==='approve'?'approved':'revoked';
+      await sb.from('profiles').update({status}).eq('id',id);
+      await sb.from('admin_log').insert({actie:action==='approve'?'Goedgekeurd':'Ingetrokken',doel_user:id,doel_naam:name});
+      toast(action==='approve'?`✓ ${name} heeft toegang`:`✕ Toegang ingetrokken`,action==='approve'?'var(--green)':'var(--red)');
+    } else {
+      await sb.from('profiles').delete().eq('id',id);
+      await sb.from('admin_log').insert({actie:'Verwijderd',doel_user:null,doel_naam:name});
+      toast(`🗑 ${name} verwijderd`,'var(--orange)');
+    }
+    await loadAdminData();
+  } catch(e) { toast('Fout: '+e.message,'var(--red)'); }
+  pendingAct=null;
+});
+function closeAdminModal() { el('mback').classList.remove('open'); pendingAct=null; }
+el('mback').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAdminModal();});
+
+/* ══════════════════════════════════════════
+   ENTER KEY LISTENER
+══════════════════════════════════════════ */
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter') return;
+  if(!el('view-login').classList.contains('active')) return;
+  if(el('aform-login').classList.contains('active')) doLogin();
   else doRegister();
 });
 </script>
