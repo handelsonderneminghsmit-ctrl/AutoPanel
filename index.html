@@ -474,6 +474,46 @@ tr:hover td{background:var(--surface2);cursor:pointer}
 /* ════════════════════════════════════════════════════
    SCROLLBAR
 ════════════════════════════════════════════════════ */
+
+/* ════════════════════════════════════════════════════
+   FOTO UPLOAD
+════════════════════════════════════════════════════ */
+.upload-zone{
+  border:2px dashed var(--border2);padding:28px 20px;text-align:center;
+  cursor:pointer;transition:all .2s;border-radius:2px;position:relative;
+  background:var(--surface2);
+}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--accent);background:var(--accent-dim)}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-icon{font-size:28px;margin-bottom:8px;opacity:.5}
+.upload-label{font-size:13px;color:var(--text2);margin-bottom:3px}
+.upload-hint{font-size:11px;color:var(--text3)}
+.upload-progress{height:3px;background:var(--surface3);border-radius:2px;margin-top:10px;overflow:hidden;display:none}
+.upload-progress.show{display:block}
+.upload-progress-bar{height:100%;background:var(--accent);width:0%;transition:width .3s}
+.photo-thumb-wrap{position:relative;width:80px;height:60px;border-radius:8px;overflow:hidden;border:1.5px solid var(--border);cursor:pointer;flex-shrink:0}
+.photo-thumb-wrap img{width:100%;height:100%;object-fit:cover}
+.photo-thumb-wrap .ph-del{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.7);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s}
+.photo-thumb-wrap:hover .ph-del{opacity:1}
+.photo-thumb-wrap.is-primary{border-color:var(--accent)}
+.photo-thumb-wrap .ph-primary{position:absolute;bottom:2px;left:2px;background:var(--accent);color:#000;font-size:8px;font-weight:700;padding:1px 4px;border-radius:3px;font-family:'DM Mono',monospace}
+
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:12px}
+.photo-item{position:relative;aspect-ratio:4/3;border:2px solid var(--border);border-radius:2px;overflow:hidden;cursor:pointer;transition:border-color .15s}
+.photo-item img{width:100%;height:100%;object-fit:cover;display:block}
+.photo-item.primary{border-color:var(--accent)}
+.photo-badge{position:absolute;top:4px;left:4px;background:var(--accent);color:#000;font-family:'DM Mono',monospace;font-size:9px;padding:2px 5px;border-radius:1px;font-weight:700}
+.photo-actions{position:absolute;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;gap:6px;opacity:0;transition:opacity .15s}
+.photo-item:hover .photo-actions{opacity:1}
+.photo-btn{width:28px;height:28px;border-radius:50%;border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:transform .15s}
+.photo-btn:hover{transform:scale(1.1)}
+.photo-btn-primary{background:var(--accent);color:#000}
+.photo-btn-delete{background:var(--red);color:#fff}
+
+.photo-uploading{position:absolute;inset:0;background:rgba(0,0,0,.7);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.photo-uploading-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+.photo-uploading-pct{font-size:11px;color:#fff;font-family:'DM Mono',monospace}
+
 ::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
 
 /* ════════════════════════════════════════════════════
@@ -865,6 +905,17 @@ tr:hover td{background:var(--surface2);cursor:pointer}
           <div class="form-group"><label>Kenteken</label><input type="text" id="cf-kenteken" placeholder="bijv. K-123-XP" style="text-transform:uppercase"></div>
           <div class="form-group" style="grid-column:1/-1"><label>Status</label><select id="cf-status"><option value="Beschikbaar">Beschikbaar</option><option value="Gereserveerd">Gereserveerd</option><option value="Verkocht">Verkocht</option></select></div>
           <div class="form-group" style="grid-column:1/-1"><label>Notities</label><textarea id="cf-notes" rows="3" placeholder="Interne notities over dit voertuig…" style="resize:vertical"></textarea></div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label>Foto's</label>
+            <div class="upload-zone" id="cf-upload-zone">
+              <input type="file" id="cf-photo-input" accept="image/*" multiple>
+              <div class="upload-icon">📷</div>
+              <div class="upload-label">Sleep foto's hierheen of klik om te selecteren</div>
+              <div class="upload-hint">JPG, PNG, WEBP · max 8 MB per foto · meerdere tegelijk mogelijk</div>
+              <div class="upload-progress" id="cf-upload-progress"><div class="upload-progress-bar" id="cf-upload-bar"></div></div>
+            </div>
+            <div id="cf-photo-preview" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div>
+          </div>
         </div>
         <div class="alert alert-err" id="cf-err" style="margin-top:14px"></div>
       </div>
@@ -917,6 +968,7 @@ const SB_URL = 'https://ysnsiidgpvnaiasapzjg.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlzbnNpaWRncHZuYWlhc2FwempnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxNzk1MjksImV4cCI6MjA4ODc1NTUyOX0.UVS5EUhrlJznIYkG5pF-SDb2EaEo2qL1FsYgcXuN2yc';
 const { createClient } = supabase;
 const sb = createClient(SB_URL, SB_KEY);
+const UPLOAD_FN_URL = SB_URL + '/functions/v1/upload-photo';
 
 /* ══════════════════════════════════════════
    APP STATE — alle data hier
@@ -1074,10 +1126,173 @@ function openCarModal(carId = null) {
     el('cf-trans').value  = 'Automaat';
     el('cf-status').value = 'Beschikbaar';
   }
+  // Reset foto state
+  appState.pendingPhotos = [];   // {file, previewUrl, isNew:true}
+  appState.existingPhotos = [];  // {id, url, is_primary, toDelete:false}
+
+  if (carId) {
+    const c = appState.cars.find(x => x.id === carId);
+    if (c?.car_images?.length) {
+      appState.existingPhotos = c.car_images
+        .slice().sort((a,b) => a.sort_order - b.sort_order)
+        .map(img => ({ id: img.id, url: img.url, is_primary: img.is_primary, toDelete: false }));
+    }
+  }
+  renderPhotoPreview();
+  setupUploadZone();
   openModal('car-modal');
 }
 
-function closeCarModal() { appCloseModal('car-modal'); appState.editingCarId = null; }
+function closeCarModal() {
+  appCloseModal('car-modal');
+  appState.editingCarId = null;
+  appState.pendingPhotos = [];
+  appState.existingPhotos = [];
+}
+
+function renderPhotoPreview() {
+  const wrap = el('cf-photo-preview');
+  if (!wrap) return;
+  const all = [
+    ...appState.existingPhotos.filter(p => !p.toDelete).map(p => ({ ...p, isNew: false })),
+    ...appState.pendingPhotos.map(p => ({ ...p, isNew: true }))
+  ];
+  if (!all.length) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML = all.map((p, i) => {
+    const isPrimary = p.is_primary || (i === 0 && !all.some(x => x.is_primary));
+    const primaryBadge = isPrimary ? '<div class="ph-primary">HOOFD</div>' : '';
+    const primaryClass = isPrimary ? ' is-primary' : '';
+    return '<div class="photo-thumb-wrap'+primaryClass+'" data-idx="'+i+'" data-isnew="'+p.isNew+'" data-id="'+(p.id||'')+'">'
+      + '<img src="'+p.url+'">'
+      + primaryBadge
+      + '<button class="ph-del" onclick="deletePhotoPreview('+i+')">✕</button>'
+      + '</div>';
+  }).join('');
+  // click to set primary
+  wrap.querySelectorAll('.photo-thumb-wrap').forEach(function(div) {
+    div.addEventListener('click', function(e) {
+      if (e.target.classList.contains('ph-del')) return;
+      const idx = parseInt(div.dataset.idx);
+      setPrimaryPhoto(idx);
+    });
+  });
+}
+
+function deletePhotoPreview(idx) {
+  const existing = appState.existingPhotos.filter(p => !p.toDelete);
+  const pending  = appState.pendingPhotos;
+  if (idx < existing.length) {
+    const orig = appState.existingPhotos.find((p,i) => appState.existingPhotos.filter(x=>!x.toDelete).indexOf(p) === idx);
+    if (orig) orig.toDelete = true;
+  } else {
+    pending.splice(idx - existing.length, 1);
+  }
+  renderPhotoPreview();
+}
+
+function setPrimaryPhoto(idx) {
+  const existing = appState.existingPhotos.filter(p => !p.toDelete);
+  const allVisible = [...existing, ...appState.pendingPhotos];
+  existing.forEach(p => p.is_primary = false);
+  appState.pendingPhotos.forEach(p => p.is_primary = false);
+  const target = allVisible[idx];
+  if (target) target.is_primary = true;
+  renderPhotoPreview();
+}
+
+function setupUploadZone() {
+  const zone  = el('cf-upload-zone');
+  const input = el('cf-photo-input');
+  if (!zone || !input) return;
+  input.value = '';
+
+  input.onchange = function() { handlePhotoFiles(Array.from(input.files)); };
+
+  zone.ondragover = function(e) { e.preventDefault(); zone.classList.add('dragover'); };
+  zone.ondragleave = function()  { zone.classList.remove('dragover'); };
+  zone.ondrop = function(e) {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    handlePhotoFiles(Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/')));
+  };
+}
+
+function handlePhotoFiles(files) {
+  files.forEach(function(file) {
+    if (file.size > 8 * 1024 * 1024) { toast('⚠ ' + file.name + ' is te groot (max 8 MB)', 'var(--orange)'); return; }
+    const url = URL.createObjectURL(file);
+    const isFirst = appState.pendingPhotos.length === 0 && appState.existingPhotos.filter(p=>!p.toDelete).length === 0;
+    appState.pendingPhotos.push({ file, url, is_primary: isFirst, isNew: true });
+  });
+  renderPhotoPreview();
+}
+
+async function uploadPhotos(carId) {
+  const bar     = el('cf-upload-bar');
+  const prog    = el('cf-upload-progress');
+  const toUpload = appState.pendingPhotos;
+  const toDelete = appState.existingPhotos.filter(p => p.toDelete);
+  const toUpdate = appState.existingPhotos.filter(p => !p.toDelete);
+
+  if (!toUpload.length && !toDelete.length && !toUpdate.length) return;
+  if (prog) prog.classList.add('show');
+
+  // ── Verwijder gemarkeerde foto's ──
+  for (const p of toDelete) {
+    await sb.from('car_images').delete().eq('id', p.id);
+    // Verwijder ook uit Cloudinary via Edge Function (optioneel - geen delete endpoint nodig voor nu)
+  }
+
+  // ── Update primaire vlag van bestaande foto's ──
+  for (const p of toUpdate) {
+    await sb.from('car_images').update({ is_primary: p.is_primary }).eq('id', p.id);
+  }
+
+  // ── Upload nieuwe foto's via Edge Function ──
+  const { data: { session } } = await sb.auth.getSession();
+  const token = session?.access_token;
+  const allVisible = [...toUpdate, ...toUpload];
+
+  for (let i = 0; i < toUpload.length; i++) {
+    const p = toUpload[i];
+    if (bar) bar.style.width = Math.round((i / toUpload.length) * 90) + '%';
+
+    const fd = new FormData();
+    fd.append('file', p.file, p.file.name || 'photo.jpg');
+    fd.append('car_id', carId);
+
+    let res, data;
+    try {
+      res  = await fetch(UPLOAD_FN_URL, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token },
+        body: fd
+      });
+      data = await res.json();
+    } catch(e) {
+      toast('⚠ Upload mislukt: ' + e.message, 'var(--orange)');
+      continue;
+    }
+
+    if (!res.ok || data.error) {
+      toast('⚠ Upload fout: ' + (data.error || 'onbekend'), 'var(--orange)');
+      continue;
+    }
+
+    const sortOrder = toUpdate.length + i;
+    const isPrimary = p.is_primary || (sortOrder === 0 && !allVisible.some(x => x.is_primary));
+
+    await sb.from('car_images').insert({
+      car_id:     carId,
+      url:        data.url,
+      is_primary: isPrimary,
+      sort_order: sortOrder,
+    });
+  }
+
+  if (bar) bar.style.width = '100%';
+  setTimeout(function() { if (prog) prog.classList.remove('show'); if (bar) bar.style.width = '0%'; }, 600);
+}
 
 async function saveCar() {
   hideEl('cf-err');
@@ -1116,9 +1331,12 @@ async function saveCar() {
     }
     if (error) throw error;
 
+    // Upload foto's
+    const savedId = appState.editingCarId || (await sb.from('cars').select('id').eq('company_id', appState.companyId).order('created_at', {ascending:false}).limit(1).single()).data?.id;
+    if (savedId) await uploadPhotos(savedId);
+
     closeCarModal();
     await loadCars();
-    // refresh huidige view
     const active = document.querySelector('.app-view.active');
     if (active?.id === 'app-view-inventory') renderInventory();
     if (active?.id === 'app-view-dashboard') renderDashboard();
