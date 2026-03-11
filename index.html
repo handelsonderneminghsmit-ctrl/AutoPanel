@@ -491,12 +491,16 @@ tr:hover td{background:var(--surface2);cursor:pointer}
 .upload-progress{height:3px;background:var(--surface3);border-radius:2px;margin-top:10px;overflow:hidden;display:none}
 .upload-progress.show{display:block}
 .upload-progress-bar{height:100%;background:var(--accent);width:0%;transition:width .3s}
-.photo-thumb-wrap{position:relative;width:80px;height:60px;border-radius:8px;overflow:hidden;border:1.5px solid var(--border);cursor:pointer;flex-shrink:0}
-.photo-thumb-wrap img{width:100%;height:100%;object-fit:cover}
-.photo-thumb-wrap .ph-del{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.7);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s}
+.photo-thumb-wrap{position:relative;width:80px;height:60px;border-radius:8px;overflow:hidden;border:1.5px solid var(--border);cursor:grab;flex-shrink:0;transition:opacity .15s,transform .15s}
+.photo-thumb-wrap:active{cursor:grabbing}
+.photo-thumb-wrap img{width:100%;height:100%;object-fit:cover;pointer-events:none}
+.photo-thumb-wrap .ph-del{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.7);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s;z-index:2}
 .photo-thumb-wrap:hover .ph-del{opacity:1}
 .photo-thumb-wrap.is-primary{border-color:var(--accent)}
-.photo-thumb-wrap .ph-primary{position:absolute;bottom:2px;left:2px;background:var(--accent);color:#000;font-size:8px;font-weight:700;padding:1px 4px;border-radius:3px;font-family:'DM Mono',monospace}
+.photo-thumb-wrap .ph-primary{position:absolute;bottom:2px;left:2px;background:var(--accent);color:#000;font-size:8px;font-weight:700;padding:1px 4px;border-radius:3px;font-family:'DM Mono',monospace;pointer-events:none}
+.photo-thumb-wrap.dragging{opacity:.35;transform:scale(.95)}
+.photo-thumb-wrap.drag-over{border-color:var(--accent);border-style:dashed;transform:scale(1.05)}
+#cf-photo-preview{flex-wrap:wrap;gap:8px;margin-top:10px;min-height:68px}
 
 .photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:12px}
 .photo-item{position:relative;aspect-ratio:4/3;border:2px solid var(--border);border-radius:2px;overflow:hidden;cursor:pointer;transition:border-color .15s}
@@ -1157,25 +1161,65 @@ function renderPhotoPreview() {
     ...appState.existingPhotos.filter(p => !p.toDelete).map(p => ({ ...p, isNew: false })),
     ...appState.pendingPhotos.map(p => ({ ...p, isNew: true }))
   ];
-  if (!all.length) { wrap.innerHTML = ''; return; }
-  wrap.innerHTML = all.map((p, i) => {
+  wrap.innerHTML = '';
+  if (!all.length) return;
+
+  all.forEach(function(p, i) {
     const isPrimary = p.is_primary || (i === 0 && !all.some(x => x.is_primary));
-    const primaryBadge = isPrimary ? '<div class="ph-primary">HOOFD</div>' : '';
-    const primaryClass = isPrimary ? ' is-primary' : '';
-    return '<div class="photo-thumb-wrap'+primaryClass+'" data-idx="'+i+'" data-isnew="'+p.isNew+'" data-id="'+(p.id||'')+'">'
-      + '<img src="'+p.url+'">'
-      + primaryBadge
-      + '<button class="ph-del" onclick="deletePhotoPreview('+i+')">✕</button>'
-      + '</div>';
-  }).join('');
-  // click to set primary
-  wrap.querySelectorAll('.photo-thumb-wrap').forEach(function(div) {
+    const div = document.createElement('div');
+    div.className = 'photo-thumb-wrap' + (isPrimary ? ' is-primary' : '');
+    div.draggable = true;
+    div.dataset.idx = i;
+    div.innerHTML = '<img src="' + p.url + '">'
+      + (isPrimary ? '<div class="ph-primary">HOOFD</div>' : '')
+      + '<button class="ph-del">✕</button>';
+
+    div.querySelector('.ph-del').addEventListener('click', function(e) {
+      e.stopPropagation(); deletePhotoPreview(i);
+    });
     div.addEventListener('click', function(e) {
       if (e.target.classList.contains('ph-del')) return;
-      const idx = parseInt(div.dataset.idx);
-      setPrimaryPhoto(idx);
+      setPrimaryPhoto(i);
     });
+    div.addEventListener('dragstart', function(e) {
+      appState.dragSrcIdx = i;
+      div.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    div.addEventListener('dragend', function() {
+      div.classList.remove('dragging');
+      wrap.querySelectorAll('.photo-thumb-wrap').forEach(function(d) { d.classList.remove('drag-over'); });
+    });
+    div.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      wrap.querySelectorAll('.photo-thumb-wrap').forEach(function(d) { d.classList.remove('drag-over'); });
+      div.classList.add('drag-over');
+    });
+    div.addEventListener('dragleave', function() { div.classList.remove('drag-over'); });
+    div.addEventListener('drop', function(e) {
+      e.preventDefault();
+      div.classList.remove('drag-over');
+      const src = appState.dragSrcIdx;
+      const dst = i;
+      if (src !== dst) reorderPhotos(src, dst);
+    });
+    wrap.appendChild(div);
   });
+}
+
+function reorderPhotos(srcIdx, dstIdx) {
+  const existing = appState.existingPhotos.filter(p => !p.toDelete);
+  const pending  = appState.pendingPhotos;
+  const all = [...existing, ...pending];
+  const [moved] = all.splice(srcIdx, 1);
+  all.splice(dstIdx, 0, moved);
+  if (!all.some(p => p.is_primary)) all[0].is_primary = true;
+  const newExisting = [], newPending = [];
+  all.forEach(function(p) { if (p.isNew) newPending.push(p); else newExisting.push(p); });
+  const deleted = appState.existingPhotos.filter(p => p.toDelete);
+  appState.existingPhotos = [...newExisting, ...deleted];
+  appState.pendingPhotos  = newPending;
+  renderPhotoPreview();
 }
 
 function deletePhotoPreview(idx) {
@@ -1265,7 +1309,10 @@ async function uploadPhotos(carId) {
     try {
       res  = await fetch(UPLOAD_FN_URL, {
         method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + token },
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'apikey': SB_KEY
+        },
         body: fd
       });
       data = await res.json();
