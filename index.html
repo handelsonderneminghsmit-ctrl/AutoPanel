@@ -213,6 +213,279 @@ select.inp{cursor:pointer;-webkit-appearance:none;appearance:none}
   .auth-body,.auth-top,.auth-foot{padding-left:18px;padding-right:18px}
   .field-row{grid-template-columns:1fr}
 }
+
+/* ── Dashboard styles ── */
+<style>
+[data-theme="dark"]{--bg:#0d0f14;--surface:#13161e;--surface2:#1a1e28;--surface3:#212636;--border:#2a2f3f;--border2:#353b50;--text:#eef0f5;--text2:#8a90a8;--text3:#555c78;--shadow:0 4px 24px rgba(0,0,0,.4);--overlay:rgba(13,15,20,.88)}
+[data-theme="light"]{--bg:#f2f3f7;--surface:#fff;--surface2:#f7f8fc;--surface3:#eef0f6;--border:#dde0ea;--border2:#c8ccd9;--text:#111827;--text2:#5c6480;--text3:#9ba3be;--shadow:0 4px 24px rgba(0,0,0,.08);--overlay:rgba(242,243,247,.92)}
+[data-theme="blue"]{--bg:#05080f;--surface:#0a0f1e;--surface2:#111628;--surface3:#182035;--border:#1e2a42;--border2:#2a3a58;--text:#e8eeff;--text2:#7a8cb8;--text3:#3a4a6a;--shadow:0 4px 24px rgba(0,0,0,.5);--overlay:rgba(5,8,15,.9)}
+:root{--accent:#e8f03c;--accent2:#3ce8b4;--accent3:#e83c6a;--green:#3ce890;--orange:#f0923c;--red:#e83c6a}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;transition:background .3s,color .3s}
+/* SIDEBAR */
+.sidebar{width:220px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;position:fixed;top:0;left:0;bottom:0;z-index:200;transition:transform .25s cubic-bezier(.4,0,.2,1),background .3s}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:var(--overlay);z-index:199}
+.logo{padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.logo-mark{width:34px;height:34px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:800;font-size:13px;color:#000;flex-shrink:0;letter-spacing:-.5px}
+.logo-text{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;letter-spacing:-.3px;line-height:1.2}
+.logo-text span{color:var(--text2);font-weight:400;font-size:11px;display:block;letter-spacing:.5px;text-transform:uppercase}
+.logo-close{margin-left:auto;display:none;background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px}
+.nav{flex:1;padding:8px 0;overflow-y:auto}
+.nav-section-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);padding:14px 20px 4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;font-size:13.5px;font-weight:400;color:var(--text2);cursor:pointer;transition:all .15s;border-left:2px solid transparent;user-select:none}
+.nav-item:hover{color:var(--text);background:var(--surface2)}
+.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(232,240,60,.06);font-weight:500}
+.nav-item .icon{width:16px;text-align:center;font-size:14px;flex-shrink:0}
+.nav-badge{margin-left:auto;background:var(--accent);color:#000;font-family:'DM Mono',monospace;font-size:10px;font-weight:500;padding:1px 6px;border-radius:2px}
+.nav-badge.alert{background:var(--red);color:#fff}
+.sidebar-footer{padding:14px 20px;border-top:1px solid var(--border)}
+.user-chip{display:flex;align-items:center;gap:10px}
+.avatar{width:30px;height:30px;background:var(--surface3);border:1px solid var(--border2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--accent);font-family:'Syne',sans-serif}
+.user-name{font-size:12.5px;font-weight:500}
+.user-role{font-size:11px;color:var(--text3)}
+/* MAIN */
+.main{margin-left:220px;flex:1;min-height:100vh;display:flex;flex-direction:column;min-width:0}
+.topbar{height:54px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:10px;position:sticky;top:0;z-index:50;transition:background .3s}
+.hamburger{display:none;background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px;margin-right:4px}
+.page-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar-actions{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.theme-switcher{display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:2px;overflow:hidden}
+.theme-btn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;background:none;border:none;color:var(--text2);transition:all .15s}
+.theme-btn:hover{background:var(--surface3)}
+.theme-btn.active{background:var(--surface3);color:var(--accent)}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;font-size:12.5px;font-weight:500;cursor:pointer;border:none;transition:all .15s;font-family:'DM Sans',sans-serif;border-radius:2px;white-space:nowrap}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--surface2);color:var(--text);border-color:var(--border2)}
+.btn-primary{background:var(--accent);color:#000;font-weight:600}
+.btn-primary:hover{background:#d4da2e}
+.btn-danger{background:rgba(232,60,106,.1);color:var(--red);border:1px solid rgba(232,60,106,.25)}
+.btn-ai{background:linear-gradient(135deg,rgba(60,232,180,.15),rgba(232,240,60,.1));color:var(--accent2);border:1px solid rgba(60,232,180,.3)}
+.btn-ai:hover{background:linear-gradient(135deg,rgba(60,232,180,.25),rgba(232,240,60,.15));border-color:var(--accent2)}
+.btn-sm{padding:5px 10px;font-size:11.5px}
+.btn-full{width:100%;justify-content:center;padding:11px}
+/* CONTENT */
+.content{padding:20px;flex:1}
+/* BADGES */
+.badge{display:inline-block;padding:2px 8px;font-family:'DM Mono',monospace;font-size:10px;border-radius:2px}
+.badge-green{background:rgba(60,232,144,.12);color:var(--green);border:1px solid rgba(60,232,144,.2)}
+.badge-yellow{background:rgba(232,240,60,.1);color:var(--accent);border:1px solid rgba(232,240,60,.2)}
+.badge-red{background:rgba(232,60,106,.1);color:var(--red);border:1px solid rgba(232,60,106,.2)}
+.badge-blue{background:rgba(60,232,180,.1);color:var(--accent2);border:1px solid rgba(60,232,180,.2)}
+/* VIEWS */
+.view{display:none}
+.view.active{display:block}
+/* PANELS */
+.panel{background:var(--surface);border:1px solid var(--border);transition:background .3s,border-color .3s}
+.panel-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.panel-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px}
+.panel-meta{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)}
+.panel-body{padding:18px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+/* DASHBOARD */
+.kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);padding:20px 22px;position:relative;overflow:hidden;animation:fadeUp .4s both;transition:background .3s,border-color .3s}
+.kpi-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi-card.green::after{background:var(--green)}.kpi-card.yellow::after{background:var(--accent)}.kpi-card.red::after{background:var(--red)}.kpi-card.blue::after{background:var(--accent2)}
+.kpi-label{font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;letter-spacing:.3px;text-transform:uppercase;color:var(--text3);margin-bottom:10px}
+.kpi-value{font-family:'Outfit',sans-serif;font-weight:700;font-size:38px;letter-spacing:-1px;line-height:1;color:var(--text)}
+.kpi-sub{font-size:12px;color:var(--text2);margin-top:8px;display:flex;align-items:center;gap:5px}
+.kpi-delta{font-size:12px;font-weight:600}
+.kpi-delta.up{color:var(--green)}.kpi-delta.down{color:var(--red)}
+.dash-grid{display:grid;grid-template-columns:1fr 320px;gap:14px;margin-bottom:14px}
+.bar-chart{display:flex;align-items:flex-end;gap:5px;height:110px}
+.bar-group{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end}
+.bar{width:100%;border-radius:1px 1px 0 0;transition:opacity .15s;cursor:pointer;min-height:4px}
+.bar:hover{opacity:.75}
+.bar.primary{background:var(--accent)}.bar.secondary{background:var(--surface3);border:1px solid var(--border2)}
+.bar-label{font-family:'DM Mono',monospace;font-size:9px;color:var(--text3)}
+.chart-legend{display:flex;gap:14px;margin-top:10px}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)}
+.legend-dot{width:8px;height:8px;border-radius:1px}
+.brand-list{display:flex;flex-direction:column}
+.brand-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.brand-row:last-child{border-bottom:none}
+.brand-name{font-size:12.5px;font-weight:500;width:80px;flex-shrink:0}
+.brand-bar-wrap{flex:1;height:5px;background:var(--surface3)}
+.brand-bar-fill{height:100%;background:var(--accent);transition:width 1s cubic-bezier(.4,0,.2,1)}
+.brand-count{font-family:'DM Mono',monospace;font-size:11px;color:var(--text2);width:28px;text-align:right}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse}
+th{font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;color:var(--text3);padding:11px 16px;text-align:left;border-bottom:2px solid var(--border);white-space:nowrap;background:var(--surface2)}
+td{padding:12px 16px;font-size:13.5px;font-family:'DM Sans',sans-serif;font-weight:400;line-height:1.4;border-bottom:1px solid var(--border);color:var(--text2);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--surface2);cursor:pointer}
+.td-main{color:var(--text);font-weight:600;font-size:14px}
+/* INVENTORY */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:10px;flex-wrap:wrap}
+.section-title{font-family:'Syne',sans-serif;font-weight:700;font-size:18px}
+.inventory-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.search-box{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);padding:7px 12px;flex:1;min-width:180px;max-width:320px}
+.search-box input{background:none;border:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;width:100%}
+.search-box input::placeholder{color:var(--text3)}
+.filter-chips{display:flex;gap:6px;flex-wrap:wrap}
+.filter-chip{display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);padding:6px 11px;font-size:12px;color:var(--text2);cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;border-radius:2px;white-space:nowrap}
+.filter-chip:hover{border-color:var(--border2);color:var(--text)}
+.filter-chip.active{border-color:var(--accent);color:var(--accent);background:rgba(232,240,60,.06)}
+.inventory-count{font-family:'DM Mono',monospace;font-size:11px;color:var(--text3)}
+.view-toggle{display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:2px;overflow:hidden}
+.view-btn{padding:5px 10px;font-size:12px;cursor:pointer;color:var(--text2);background:none;border:none;font-family:'DM Sans',sans-serif;transition:all .15s}
+.view-btn.active{background:var(--surface3);color:var(--text)}
+.car-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:10px}
+.car-card{background:var(--surface);border:1px solid var(--border);overflow:hidden;cursor:pointer;transition:border-color .15s,transform .15s,background .3s;animation:fadeUp .35s both}
+.car-card:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:var(--shadow)}
+.car-img{width:100%;height:150px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:44px;position:relative;overflow:hidden}
+.car-img-overlay{position:absolute;inset:0;background:linear-gradient(135deg,rgba(232,240,60,.04) 0%,transparent 60%)}
+.car-img-badge{position:absolute;top:8px;right:8px}
+.car-body{padding:13px}
+.car-make{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:2px}
+.car-model{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;margin-bottom:7px}
+.car-specs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.spec-item{font-size:11px;color:var(--text2);display:flex;align-items:center;gap:3px}
+.spec-dot{width:3px;height:3px;background:var(--text3);border-radius:50%}
+.car-footer{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border)}
+.car-price{font-family:'Syne',sans-serif;font-weight:800;font-size:17px}
+.car-price small{font-family:'DM Sans',sans-serif;font-size:10px;font-weight:400;color:var(--text3)}
+.car-days{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)}
+/* DETAIL */
+.detail-back{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;margin-bottom:18px;font-family:'DM Mono',monospace;transition:color .15s}
+.detail-back:hover{color:var(--accent)}
+.detail-grid{display:grid;grid-template-columns:1fr 340px;gap:18px;align-items:start}
+.detail-hero{background:var(--surface);border:1px solid var(--border);height:280px;display:flex;align-items:center;justify-content:center;font-size:90px;position:relative;overflow:hidden;margin-bottom:10px}
+.detail-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%,rgba(232,240,60,.07) 0%,transparent 60%)}
+.detail-thumbs{display:flex;gap:7px}
+.thumb{width:68px;height:50px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;transition:border-color .15s,opacity .15s;opacity:.45}
+.thumb.active{border-color:var(--accent);opacity:1}
+.thumb:hover:not(.active){opacity:.75}
+.detail-panel{background:var(--surface);border:1px solid var(--border);margin-bottom:10px}
+.detail-head{padding:18px;border-bottom:1px solid var(--border)}
+.detail-make{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:3px}
+.detail-model{font-family:'Syne',sans-serif;font-weight:800;font-size:24px;letter-spacing:-.5px;margin-bottom:10px}
+.detail-price{font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:var(--accent)}
+.detail-price small{font-family:'DM Sans',sans-serif;font-size:11px;font-weight:400;color:var(--text3)}
+.spec-grid{display:grid;grid-template-columns:1fr 1fr;padding:14px 18px}
+.spec-row{padding:8px 0;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:2px}
+.spec-row:nth-child(odd){padding-right:14px}
+.spec-key{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.8px;text-transform:uppercase;color:var(--text3)}
+.spec-val{font-size:13px;font-weight:500;color:var(--text)}
+.detail-actions{padding:14px 18px;display:flex;flex-direction:column;gap:7px}
+.timeline{padding:4px 0}
+.tl-item{display:flex;gap:12px;padding:9px 18px;border-bottom:1px solid var(--border)}
+.tl-item:last-child{border-bottom:none}
+.tl-dot{width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.tl-dot.green{background:var(--green)}.tl-dot.yellow{background:var(--accent)}.tl-dot.blue{background:var(--accent2)}.tl-dot.gray{background:var(--text3)}
+.tl-body{flex:1;min-width:0}
+.tl-title{font-size:12.5px;font-weight:500;margin-bottom:2px}
+.tl-meta{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)}
+
+/* ========== FINANCIAL DASHBOARD ========== */
+.fin-kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.fin-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.margin-table th,.margin-table td{padding:11px 16px;font-size:13.5px}
+.margin-bar{height:5px;border-radius:1px;margin-top:5px}
+.marge-pos{background:var(--green)}.marge-neg{background:var(--red)}
+.sparkline{display:flex;align-items:flex-end;gap:3px;height:40px;margin-top:8px}
+.spark-bar{flex:1;border-radius:1px 1px 0 0;min-height:3px;opacity:.8}
+
+/* ========== ADVERTENTIE EXPORT ========== */
+.export-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.platform-card{background:var(--surface);border:1px solid var(--border);padding:18px;cursor:pointer;transition:border-color .15s,background .15s}
+.platform-card:hover{border-color:var(--border2);background:var(--surface2)}
+.platform-card.selected{border-color:var(--accent);background:rgba(232,240,60,.04)}
+.platform-logo{font-size:28px;margin-bottom:10px}
+.platform-name{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:4px}
+.platform-desc{font-size:12px;color:var(--text2)}
+.platform-check{float:right;color:var(--accent);font-size:16px;display:none}
+.platform-card.selected .platform-check{display:inline}
+.export-preview{background:var(--surface2);border:1px solid var(--border);padding:18px;margin-top:14px}
+.export-preview-title{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:12px}
+.export-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px}
+.export-tab{padding:8px 16px;font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
+.export-tab:hover{color:var(--text)}
+.export-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.export-content{font-size:13px;color:var(--text);line-height:1.7;white-space:pre-wrap;font-family:'DM Sans',sans-serif}
+.export-field{margin-bottom:12px}
+.export-field label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);display:block;margin-bottom:5px}
+.export-field textarea{width:100%;background:var(--surface3);border:1px solid var(--border);padding:10px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.6;outline:none;resize:vertical;min-height:100px;border-radius:2px;transition:border-color .15s}
+.export-field textarea:focus{border-color:var(--accent)}
+.export-field input{width:100%;background:var(--surface3);border:1px solid var(--border);padding:8px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;border-radius:2px;transition:border-color .15s}
+.export-field input:focus{border-color:var(--accent)}
+
+/* ========== AI ASSISTANT ========== */
+.ai-panel{background:var(--surface);border:1px solid var(--border);overflow:hidden}
+.ai-header{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.ai-indicator{width:8px;height:8px;border-radius:50%;background:var(--accent2);box-shadow:0 0 8px var(--accent2);animation:pulse 2s infinite}
+.ai-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;flex:1}
+.ai-model{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)}
+.ai-body{padding:18px}
+.ai-car-select{margin-bottom:14px}
+.ai-car-select label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);display:block;margin-bottom:6px}
+.ai-car-select select{width:100%;background:var(--surface2);border:1px solid var(--border);padding:8px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;border-radius:2px;cursor:pointer;-webkit-appearance:none;appearance:none}
+.ai-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.ai-action-btn{background:var(--surface2);border:1px solid var(--border);padding:12px;cursor:pointer;transition:all .15s;text-align:left;border-radius:2px}
+.ai-action-btn:hover{border-color:var(--accent2);background:rgba(60,232,180,.06)}
+.ai-action-icon{font-size:18px;margin-bottom:6px}
+.ai-action-label{font-size:12px;font-weight:500;color:var(--text);margin-bottom:2px}
+.ai-action-desc{font-size:11px;color:var(--text3)}
+.ai-output{background:var(--surface2);border:1px solid var(--border);border-radius:2px;min-height:120px;padding:14px;display:none}
+.ai-output.show{display:block}
+.ai-output-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--accent2);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.ai-output-text{font-size:13px;color:var(--text);line-height:1.7;white-space:pre-wrap}
+.ai-loading{display:flex;align-items:center;gap:10px;color:var(--text2);font-size:13px}
+.ai-spinner{width:16px;height:16px;border:2px solid var(--border2);border-top-color:var(--accent2);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ai-output-actions{display:flex;gap:7px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.copy-flash{animation:copyFlash .6s}
+@keyframes copyFlash{0%,100%{color:var(--accent2)}50%{color:var(--green)}}
+
+/* MODALS */
+.modal-backdrop{display:none;position:fixed;inset:0;background:var(--overlay);z-index:300;align-items:center;justify-content:center;padding:20px}
+.modal-backdrop.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);width:100%;max-width:480px;animation:modalIn .2s;box-shadow:var(--shadow)}
+@keyframes modalIn{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal-header{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px}
+.modal-close{background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:2px;transition:color .15s}
+.modal-close:hover{color:var(--text)}
+.modal-body{padding:20px}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+.input-group{margin-bottom:16px}
+.input-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);margin-bottom:7px;display:block}
+.input-field{width:100%;background:var(--surface2);border:1px solid var(--border);padding:9px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:14px;letter-spacing:1.5px;text-transform:uppercase;outline:none;transition:border-color .15s;border-radius:2px}
+.input-field:focus{border-color:var(--accent)}
+.rdw-result{margin-top:16px;background:var(--surface2);border:1px solid var(--border);padding:16px;display:none}
+.rdw-result.show{display:block}
+.rdw-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)}
+.rdw-row:last-child{border-bottom:none}
+.rdw-key{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);text-transform:uppercase}
+.rdw-val{font-size:13px;font-weight:500;color:var(--text)}
+.rdw-status{display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.rdw-status-dot{width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+.rdw-status-label{font-family:'Syne',sans-serif;font-weight:700;font-size:14px}
+.rdw-sub{font-size:11px;color:var(--text2)}
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2)}
+/* RESPONSIVE */
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}
+  .sidebar-overlay.open{display:block}.logo-close{display:flex}
+  .main{margin-left:0}.hamburger{display:flex}
+  .kpi-strip,.fin-kpi-strip{grid-template-columns:repeat(2,1fr)}
+  .dash-grid,.fin-grid,.export-grid{grid-template-columns:1fr}
+  .detail-grid{grid-template-columns:1fr}
+  .ai-actions{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+  .kpi-strip,.fin-kpi-strip{grid-template-columns:repeat(2,1fr);gap:7px}
+  .kpi-value{font-size:22px}.content{padding:14px}
+  .car-grid{grid-template-columns:1fr}
+  .section-header{flex-direction:column;align-items:flex-start}
+}
+
 </style>
 </head>
 <body>
@@ -413,15 +686,322 @@ select.inp{cursor:pointer;-webkit-appearance:none;appearance:none}
       <button class="t-out" onclick="doLogout()">Uitloggen</button>
     </div>
   </div>
-  <div class="app-content">
-    <div class="app-welcome" id="u-welcome">Goedemiddag</div>
-    <div class="app-sub">Je bent ingelogd op AutoPanel.</div>
-    <div class="app-placeholder">
-      <div class="app-placeholder-icon">🚗</div>
-      <div class="app-placeholder-title">Dashboard wordt geladen</div>
-      <div class="app-placeholder-text">Koppel hier het <code>autopanel.html</code> dashboard.<br>Vervang dit blok door de inhoud van het dashboard.</div>
+
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="logo">
+    <div class="logo-mark">AP</div>
+    <div class="logo-text">AutoPanel<span>Voorraadbeheer</span></div>
+    <button class="logo-close" onclick="closeSidebar()">✕</button>
+  </div>
+  <nav class="nav">
+    <div class="nav-section-label">Overzicht</div>
+    <div class="nav-item active" onclick="appShowView('dashboard');closeSidebar()"><span class="icon">▣</span>Dashboard</div>
+    <div class="nav-item" onclick="appShowView('inventory');closeSidebar()"><span class="icon">◫</span>Voorraad<span class="nav-badge">247</span></div>
+    <div class="nav-section-label">Analyse</div>
+    <div class="nav-item" onclick="appShowView('finance');closeSidebar()"><span class="icon">◈</span>Financieel</div>
+    <div class="nav-item" onclick="appShowView('export');closeSidebar()"><span class="icon">↗</span>Advertentie-export</div>
+    <div class="nav-item" onclick="appShowView('ai');closeSidebar()"><span class="icon">◎</span>AI-assistent<span class="nav-badge" style="background:var(--accent2);color:#000">Nieuw</span></div>
+    <div class="nav-section-label">Handel</div>
+    <div class="nav-item" onclick="closeSidebar()"><span class="icon">↕</span>Inkoop</div>
+    <div class="nav-item" onclick="closeSidebar()"><span class="icon">◈</span>Veilingen<span class="nav-badge alert">3</span></div>
+    <div class="nav-item" onclick="openRdw();closeSidebar()"><span class="icon">◉</span>RDW Check</div>
+    <div class="nav-section-label">Beheer</div>
+    <div class="nav-item" onclick="closeSidebar()"><span class="icon">≡</span>Rapporten</div>
+    <div class="nav-item" onclick="closeSidebar()"><span class="icon">⚙</span>Instellingen</div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <div class="avatar">MV</div>
+      <div style="flex:1;min-width:0">
+        <div class="user-name">M. van Dijk</div>
+        <div class="user-role">Inkoper · AutoPanel</div>
+      </div>
     </div>
   </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <button class="hamburger" onclick="openSidebar()">☰</button>
+    <div class="page-title" id="topbar-title">Dashboard</div>
+    <div class="topbar-actions">
+      <div class="status-dot"></div>
+      <div class="theme-switcher">
+        <button class="theme-btn active" title="Dark" onclick="setTheme('dark',this)">●</button>
+        <button class="theme-btn" title="Light" onclick="setTheme('light',this)">○</button>
+        <button class="theme-btn" title="Blue" onclick="setTheme('blue',this)">◈</button>
+      </div>
+      <button class="btn btn-ai btn-sm" onclick="appShowView('ai')">✦ AI</button>
+      <button class="btn btn-primary btn-sm" onclick="appShowView('inventory')">+ Toevoegen</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ====== DASHBOARD ====== -->
+    <div class="view active" id="view-dashboard">
+      <div class="kpi-strip">
+        <div class="kpi-card yellow" style="animation-delay:.05s"><div class="kpi-label">Totale voorraad</div><div class="kpi-value">247</div><div class="kpi-sub"><span class="kpi-delta up">▲ +12</span> t.o.v. vorige maand</div></div>
+        <div class="kpi-card green" style="animation-delay:.10s"><div class="kpi-label">Gem. inkoopprijs</div><div class="kpi-value">€18.4K</div><div class="kpi-sub"><span class="kpi-delta down">▼ -2.1%</span> t.o.v. vorige maand</div></div>
+        <div class="kpi-card blue" style="animation-delay:.15s"><div class="kpi-label">Verkopen (maand)</div><div class="kpi-value">41</div><div class="kpi-sub"><span class="kpi-delta up">▲ +8</span> boven target</div></div>
+        <div class="kpi-card red" style="animation-delay:.20s"><div class="kpi-label">Ouder dan 90d</div><div class="kpi-value">19</div><div class="kpi-sub"><span class="kpi-delta down">▼ 7.7%</span> van voorraad</div></div>
+      </div>
+      <div class="dash-grid">
+        <div class="panel"><div class="panel-header"><div class="panel-title">Inkoop vs. Verkoop</div><div class="panel-meta">Jan – Jun 2025</div></div><div class="panel-body"><div class="bar-chart" id="bar-chart"></div><div class="chart-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Inkoop</div><div class="legend-item"><div class="legend-dot" style="background:var(--surface3);border:1px solid var(--border2)"></div>Verkoop</div></div></div></div>
+        <div class="panel"><div class="panel-header"><div class="panel-title">Per merk</div><div class="panel-meta">Top 5</div></div><div class="panel-body"><div class="brand-list" id="brand-list"></div></div></div>
+      </div>
+      <div class="panel"><div class="panel-header"><div class="panel-title">Recente activiteit</div><button class="btn btn-ghost btn-sm" onclick="appShowView('inventory')">Alles →</button></div><div class="table-wrap"><table><thead><tr><th>Voertuig</th><th>Kenteken</th><th>Jaar</th><th>KM</th><th>Prijs</th><th>Status</th><th>Dagen</th></tr></thead><tbody id="recent-table"></tbody></table></div></div>
+    </div>
+
+    <!-- ====== INVENTORY ====== -->
+    <div class="view" id="view-inventory">
+      <div class="section-header">
+        <div class="section-title">Voorraad</div>
+        <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
+          <div class="view-toggle"><button class="view-btn active" id="grid-btn" onclick="setGridView(true)">⊞</button><button class="view-btn" id="list-btn" onclick="setGridView(false)">☰</button></div>
+          <button class="btn btn-ghost btn-sm" onclick="openRdw()">◉ RDW</button>
+          <button class="btn btn-ai btn-sm" onclick="appShowView('ai')">✦ AI tekst</button>
+          <button class="btn btn-primary btn-sm">+ Toevoegen</button>
+        </div>
+      </div>
+      <div class="inventory-toolbar">
+        <div class="search-box"><span style="color:var(--text3);font-size:13px">⌕</span><input type="text" placeholder="Zoek merk, model, kenteken…" oninput="filterCars(this.value)"></div>
+        <div class="filter-chips">
+          <div class="filter-chip active" onclick="appSetFilter(this,'Alle')">Alle</div>
+          <div class="filter-chip" onclick="appSetFilter(this,'Beschikbaar')">Beschikbaar</div>
+          <div class="filter-chip" onclick="appSetFilter(this,'Gereserveerd')">Gereserveerd</div>
+          <div class="filter-chip" onclick="appSetFilter(this,'Verkocht')">Verkocht</div>
+        </div>
+        <span class="inventory-count" id="inv-count">247 voertuigen</span>
+      </div>
+      <div class="car-grid" id="car-grid"></div>
+    </div>
+
+    <!-- ====== DETAIL ====== -->
+    <div class="view" id="view-detail">
+      <div class="detail-back" onclick="appShowView('inventory')">← Terug naar voorraad</div>
+      <div class="detail-grid">
+        <div>
+          <div class="detail-hero" id="detail-hero"><span style="position:relative;z-index:1;font-size:90px">🚗</span></div>
+          <div class="detail-thumbs" id="detail-thumbs"></div>
+        </div>
+        <div>
+          <div class="detail-panel">
+            <div class="detail-head">
+              <div class="detail-make" id="d-make">VOLKSWAGEN</div>
+              <div class="detail-model" id="d-model">Golf 1.5 TSI</div>
+              <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:12px" id="d-badges"></div>
+              <div class="detail-price" id="d-price">€ 22.500 <small>excl. BTW</small></div>
+            </div>
+            <div class="spec-grid" id="d-specs"></div>
+            <div class="detail-actions">
+              <button class="btn btn-primary btn-full">Reserveren</button>
+              <button class="btn btn-ghost btn-full">Offerte maken</button>
+              <button class="btn btn-ai btn-full" id="ai-detail-btn" onclick="appShowView('ai')">✦ AI advertentietekst</button>
+              <button class="btn btn-ghost btn-full" onclick="appShowView('export')" style="color:var(--accent2);border-color:rgba(60,232,180,.3)">↗ Advertentie exporteren</button>
+              <button class="btn btn-ghost btn-full" onclick="openRdw()">◉ RDW controleren</button>
+              <button class="btn btn-danger btn-full">Voertuig afmelden</button>
+            </div>
+          </div>
+          <div class="detail-panel">
+            <div class="panel-header"><div class="panel-title">Geschiedenis</div></div>
+            <div class="timeline">
+              <div class="tl-item"><div class="tl-dot green"></div><div class="tl-body"><div class="tl-title">Ingekocht via AutoPanel Veiling</div><div class="tl-meta">14 mei 2025 · € 19.200</div></div></div>
+              <div class="tl-item"><div class="tl-dot yellow"></div><div class="tl-body"><div class="tl-title">RDW controle geslaagd</div><div class="tl-meta">15 mei 2025</div></div></div>
+              <div class="tl-item"><div class="tl-dot blue"></div><div class="tl-body"><div class="tl-title">12 foto's toegevoegd</div><div class="tl-meta">16 mei 2025</div></div></div>
+              <div class="tl-item"><div class="tl-dot gray"></div><div class="tl-body"><div class="tl-title">Gepubliceerd op AutoTrack & Marktplaats</div><div class="tl-meta">17 mei 2025</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== FINANCIEEL DASHBOARD ====== -->
+    <div class="view" id="view-finance">
+      <div class="section-header"><div class="section-title">Financieel overzicht</div><button class="btn btn-ghost btn-sm">⬇ Export Excel</button></div>
+      <div class="fin-kpi-strip" id="fin-kpis"></div>
+      <div class="fin-grid">
+        <div class="panel">
+          <div class="panel-header"><div class="panel-title">Marge per voertuig</div><div class="panel-meta">Huidige voorraad</div></div>
+          <div class="table-wrap">
+            <table class="margin-table">
+              <thead><tr><th>Voertuig</th><th>Inkoop</th><th>Vraagprijs</th><th>Marge</th><th>%</th></tr></thead>
+              <tbody id="margin-table"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><div class="panel-title">Maandelijkse omzet</div><div class="panel-meta">2025</div></div>
+          <div class="panel-body" id="fin-chart-body"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">Winst & Verlies overzicht</div><div class="panel-meta">YTD 2025</div></div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Maand</th><th>Omzet</th><th>Inkoopkosten</th><th>Bruto winst</th><th>Marge %</th><th>Trend</th></tr></thead>
+          <tbody id="pl-table"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== ADVERTENTIE EXPORT ====== -->
+    <div class="view" id="view-export">
+      <div class="section-header"><div class="section-title">Advertentie-export</div></div>
+      <div style="margin-bottom:14px">
+        <label style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);display:block;margin-bottom:8px">Selecteer voertuig</label>
+        <select id="export-car-select" style="background:var(--surface);border:1px solid var(--border);padding:8px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;border-radius:2px;cursor:pointer;-webkit-appearance:none;appearance:none;min-width:280px" onchange="updateExport()"></select>
+      </div>
+      <div class="export-grid">
+        <div class="panel">
+          <div class="panel-header"><div class="panel-title">Platform kiezen</div></div>
+          <div class="panel-body" style="display:flex;flex-direction:column;gap:8px" id="platform-list"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><div class="panel-title">Advertentie preview</div><button class="btn btn-ai btn-sm" id="export-ai-btn" onclick="generateExportAI()">✦ Genereer met AI</button></div>
+          <div class="panel-body">
+            <div class="export-tabs">
+              <div class="export-tab active" onclick="switchExportTab(this,'tekst')">Tekst</div>
+              <div class="export-tab" onclick="switchExportTab(this,'specs')">Specs</div>
+              <div class="export-tab" onclick="switchExportTab(this,'prijs')">Prijs</div>
+            </div>
+            <div id="export-tab-tekst">
+              <div class="export-field">
+                <label>Titel</label>
+                <input type="text" id="export-title" value="">
+              </div>
+              <div class="export-field">
+                <label>Advertentietekst</label>
+                <textarea id="export-body" rows="6"></textarea>
+              </div>
+            </div>
+            <div id="export-tab-specs" style="display:none">
+              <div id="export-specs-content" style="font-size:13px;color:var(--text);line-height:2"></div>
+            </div>
+            <div id="export-tab-prijs" style="display:none">
+              <div id="export-prijs-content"></div>
+            </div>
+            <div style="display:flex;gap:7px;margin-top:14px;flex-wrap:wrap">
+              <button class="btn btn-primary btn-sm" onclick="exportToClipboard()">⎘ Kopiëren</button>
+              <button class="btn btn-ghost btn-sm">↗ Marktplaats</button>
+              <button class="btn btn-ghost btn-sm">↗ AutoTrack</button>
+              <button class="btn btn-ghost btn-sm">↗ AutoScout24</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== AI ASSISTENT ====== -->
+    <div class="view" id="view-ai">
+      <div class="section-header"><div class="section-title">AI-assistent</div><span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--accent2)">● Aangedreven door Claude</span></div>
+      <div style="display:grid;grid-template-columns:1fr 360px;gap:14px;align-items:start" id="ai-main-grid">
+        <div>
+          <div class="ai-panel" style="margin-bottom:14px">
+            <div class="ai-header">
+              <div class="ai-indicator"></div>
+              <div class="ai-title">Voertuig selecteren</div>
+              <div class="ai-model">claude-sonnet-4-20250514</div>
+            </div>
+            <div class="ai-body">
+              <div class="ai-car-select">
+                <label>Voertuig</label>
+                <select id="ai-car-select" style="background:var(--surface2);border:1px solid var(--border);padding:8px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;border-radius:2px;cursor:pointer;-webkit-appearance:none;appearance:none;width:100%"></select>
+              </div>
+              <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Wat wil je genereren?</div>
+              <div class="ai-actions">
+                <button class="ai-action-btn" onclick="runAI('advertentie')">
+                  <div class="ai-action-icon">📝</div>
+                  <div class="ai-action-label">Advertentietekst</div>
+                  <div class="ai-action-desc">Volledige tekst voor Marktplaats of AutoTrack</div>
+                </button>
+                <button class="ai-action-btn" onclick="runAI('prijsadvies')">
+                  <div class="ai-action-icon">💶</div>
+                  <div class="ai-action-label">Prijsadvies</div>
+                  <div class="ai-action-desc">Marktanalyse en vraagprijs suggestie</div>
+                </button>
+                <button class="ai-action-btn" onclick="runAI('seo')">
+                  <div class="ai-action-icon">🔍</div>
+                  <div class="ai-action-label">SEO omschrijving</div>
+                  <div class="ai-action-desc">Zoekwoord-geoptimaliseerde tekst</div>
+                </button>
+                <button class="ai-action-btn" onclick="runAI('checklist')">
+                  <div class="ai-action-icon">✓</div>
+                  <div class="ai-action-label">Inkoop checklist</div>
+                  <div class="ai-action-desc">Punten om op te letten bij inspectie</div>
+                </button>
+              </div>
+              <div class="ai-output" id="ai-output">
+                <div class="ai-output-label" id="ai-output-label">✦ Resultaat</div>
+                <div class="ai-output-text" id="ai-output-text"></div>
+                <div class="ai-output-actions" id="ai-output-actions" style="display:none">
+                  <button class="btn btn-ghost btn-sm" id="copy-btn" onclick="copyAiOutput()">⎘ Kopiëren</button>
+                  <button class="btn btn-ghost btn-sm" onclick="useInExport()">↗ Gebruik in export</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="panel" style="margin-bottom:14px">
+            <div class="panel-header"><div class="panel-title">Tips voor beste resultaten</div></div>
+            <div class="panel-body" style="display:flex;flex-direction:column;gap:10px">
+              <div style="font-size:12.5px;color:var(--text2);line-height:1.6">
+                <div style="color:var(--accent);font-weight:600;margin-bottom:4px;font-family:'DM Mono',monospace;font-size:11px">◈ ADVERTENTIETEKST</div>
+                Vul foto's en opties in voor de meest volledige tekst. De AI gebruikt kenteken, jaar, km-stand en uitrusting.
+              </div>
+              <div style="border-top:1px solid var(--border);padding-top:10px;font-size:12.5px;color:var(--text2);line-height:1.6">
+                <div style="color:var(--accent2);font-weight:600;margin-bottom:4px;font-family:'DM Mono',monospace;font-size:11px">◈ PRIJSADVIES</div>
+                Gebaseerd op merk, model, jaar en km-stand. Vergelijkt met marktgemiddelden.
+              </div>
+              <div style="border-top:1px solid var(--border);padding-top:10px;font-size:12.5px;color:var(--text2);line-height:1.6">
+                <div style="color:var(--green);font-weight:600;margin-bottom:4px;font-family:'DM Mono',monospace;font-size:11px">◈ CHECKLIST</div>
+                Specifiek per merk/model. Bekende zwakke punten en aandachtspunten bij inkoop.
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">Recente AI-outputs</div></div>
+            <div style="padding:4px 0" id="ai-history">
+              <div style="padding:10px 18px;border-bottom:1px solid var(--border)">
+                <div style="font-size:12px;font-weight:500;margin-bottom:2px">BMW 320i M Sport</div>
+                <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)">Advertentietekst · 5 min geleden</div>
+              </div>
+              <div style="padding:10px 18px;border-bottom:1px solid var(--border)">
+                <div style="font-size:12px;font-weight:500;margin-bottom:2px">VW Golf 1.5 TSI</div>
+                <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)">Prijsadvies · 2 uur geleden</div>
+              </div>
+              <div style="padding:10px 18px">
+                <div style="font-size:12px;font-weight:500;margin-bottom:2px">Mercedes C 220d</div>
+                <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)">Inkoop checklist · gisteren</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- RDW MODAL -->
+<div class="modal-backdrop" id="rdw-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">◉ RDW Kentekencheck</div><button class="modal-close" onclick="appCloseModal('rdw-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="input-group"><label class="input-label">Kenteken</label><input type="text" class="input-field" id="rdw-input" placeholder="bijv. K-123-XP" maxlength="8" oninput="this.value=this.value.toUpperCase()"></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px" onclick="doRdwCheck()">Controleren</button>
+      <div class="rdw-result" id="rdw-result">
+        <div class="rdw-status"><div class="rdw-status-dot" id="rdw-dot"></div><div><div class="rdw-status-label" id="rdw-status-label"></div><div class="rdw-sub" id="rdw-status-sub"></div></div></div>
+        <div id="rdw-rows"></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="appCloseModal('rdw-modal')">Sluiten</button><button class="btn btn-primary" onclick="appCloseModal('rdw-modal')">Overnemen in dossier</button></div>
+  </div>
+</div>
+
+
 </div>
 
 <!-- Confirm modal -->
@@ -440,6 +1020,249 @@ select.inp{cursor:pointer;-webkit-appearance:none;appearance:none}
 <div class="toast" id="toast"><div class="t-dot" id="t-dot"></div><span id="t-txt"></span></div>
 
 <script>
+/* ── Dashboard JS ── */
+// ===== DATA =====
+const cars = [
+  {id:1,make:'Volkswagen',model:'Golf 1.5 TSI',year:2022,km:34000,price:22500,inkoop:19200,fuel:'Benzine',trans:'Automaat',status:'Beschikbaar',days:12,color:'Wit',kenteken:'K-123-XP',emoji:'🚗'},
+  {id:2,make:'BMW',model:'320i M Sport',year:2021,km:61000,price:34900,inkoop:29800,fuel:'Benzine',trans:'Automaat',status:'Gereserveerd',days:8,color:'Blauw',kenteken:'L-456-RB',emoji:'🚙'},
+  {id:3,make:'Mercedes',model:'C 220d AMG',year:2020,km:88000,price:29750,inkoop:25100,fuel:'Diesel',trans:'Automaat',status:'Beschikbaar',days:31,color:'Zwart',kenteken:'H-789-MC',emoji:'🚘'},
+  {id:4,make:'Audi',model:'A4 2.0 TDI',year:2021,km:52000,price:31200,inkoop:27400,fuel:'Diesel',trans:'Handmatig',status:'Beschikbaar',days:5,color:'Grijs',kenteken:'N-321-AA',emoji:'🚗'},
+  {id:5,make:'Toyota',model:'Yaris Hybrid',year:2023,km:18000,price:26800,inkoop:23500,fuel:'Hybride',trans:'CVT',status:'Beschikbaar',days:3,color:'Rood',kenteken:'P-654-TY',emoji:'🚙'},
+  {id:6,make:'Ford',model:'Focus 1.0 EcoBoost',year:2020,km:74000,price:16500,inkoop:13200,fuel:'Benzine',trans:'Handmatig',status:'Verkocht',days:94,color:'Zilver',kenteken:'G-987-FF',emoji:'🚗'},
+  {id:7,make:'Seat',model:'Leon FR 1.5',year:2022,km:41000,price:21900,inkoop:18600,fuel:'Benzine',trans:'Handmatig',status:'Beschikbaar',days:17,color:'Oranje',kenteken:'J-111-SL',emoji:'🚘'},
+  {id:8,make:'Peugeot',model:'308 1.2 PureTech',year:2021,km:57000,price:19400,inkoop:16100,fuel:'Benzine',trans:'Automaat',status:'Beschikbaar',days:22,color:'Wit',kenteken:'M-222-PG',emoji:'🚗'},
+];
+
+const months = ['Jan','Feb','Mrt','Apr','Mei','Jun'];
+const inkoop  = [38,52,45,61,54,47];
+const verkoop = [31,44,39,58,46,41];
+const brands  = [{name:'Volkswagen',count:48},{name:'BMW',count:39},{name:'Mercedes',count:35},{name:'Audi',count:31},{name:'Toyota',count:27}];
+const omzet   = [612000,847000,731000,982000,874000,763000];
+const kosten  = [498000,689000,592000,791000,706000,618000];
+
+const platforms = [
+  {id:'marktplaats',name:'Marktplaats',icon:'🟦',desc:'Grootste NL-platform · B2C',fields:{titel:true,tekst:true,prijs:true}},
+  {id:'autotrack',name:'AutoTrack',icon:'🔴',desc:'Professioneel · dealers',fields:{titel:true,tekst:true,prijs:true}},
+  {id:'autoscout',name:'AutoScout24',icon:'🟠',desc:'Pan-Europees · breed bereik',fields:{titel:true,tekst:true,prijs:true}},
+  {id:'mobilede',name:'mobile.de',icon:'🟡',desc:'Duits platform · export',fields:{titel:true,tekst:true,prijs:true}},
+];
+
+let currentFilter='Alle', currentSearch='', selectedPlatform='marktplaats', currentAiCar=cars[0];
+let lastAiOutput='';
+
+// ===== HELPERS =====
+function statusBadge(s){const m={Beschikbaar:'badge-green',Gereserveerd:'badge-yellow',Verkocht:'badge-red'};return`<span class="badge ${m[s]||'badge-blue'}">${s}</span>`}
+function fmt(n){return(+n).toLocaleString('nl-NL')}
+function marge(c){return c.price - c.inkoop}
+function margePct(c){return Math.round((c.price-c.inkoop)/c.inkoop*100)}
+
+// ===== DASHBOARD =====
+function renderDashboard(){
+  const maxV=Math.max(...inkoop,...verkoop);
+  document.getElementById('bar-chart').innerHTML=months.map((m,i)=>`<div class="bar-group"><div class="bar primary" style="height:${Math.round(inkoop[i]/maxV*100)}%"></div><div class="bar secondary" style="height:${Math.round(verkoop[i]/maxV*100)}%"></div><div class="bar-label">${m}</div></div>`).join('');
+  const maxB=brands[0].count;
+  document.getElementById('brand-list').innerHTML=brands.map(b=>`<div class="brand-row"><div class="brand-name">${b.name}</div><div class="brand-bar-wrap"><div class="brand-bar-fill" style="width:0%" data-w="${Math.round(b.count/maxB*100)}%"></div></div><div class="brand-count">${b.count}</div></div>`).join('');
+  setTimeout(()=>{document.querySelectorAll('.brand-bar-fill').forEach(el=>{el.style.width=el.dataset.w})},80);
+  document.getElementById('recent-table').innerHTML=cars.slice(0,6).map(c=>`<tr onclick="showDetail(${c.id})"><td class="td-main">${c.make} ${c.model}</td><td><span style="font-size:13px;font-weight:500;color:var(--text);letter-spacing:.4px">${c.kenteken}</span></td><td>${c.year}</td><td>${fmt(c.km)} km</td><td style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--text)">€ ${fmt(c.price)}</td><td>${statusBadge(c.status)}</td><td><span style="font-size:13px;font-weight:500;color:${c.days>60?'var(--red)':c.days>30?'var(--orange)':'var(--text2)'}">${c.days}d</span></td></tr>`).join('');
+}
+
+// ===== INVENTORY =====
+function getFiltered(){return cars.filter(c=>(currentFilter==='Alle'||c.status===currentFilter)&&(c.make+' '+c.model+' '+c.kenteken).toLowerCase().includes(currentSearch.toLowerCase()))}
+function renderInventory(){
+  const list=getFiltered();
+  document.getElementById('inv-count').textContent=list.length+' voertuigen';
+  document.getElementById('car-grid').innerHTML=list.map((c,i)=>`<div class="car-card" style="animation-delay:${i*.04}s" onclick="showDetail(${c.id})"><div class="car-img"><span style="position:relative;z-index:1">${c.emoji}</span><div class="car-img-overlay"></div><div class="car-img-badge">${statusBadge(c.status)}</div></div><div class="car-body"><div class="car-make">${c.make}</div><div class="car-model">${c.model}</div><div class="car-specs"><span class="spec-item">${c.year}</span><span class="spec-item"><span class="spec-dot"></span>${fmt(c.km)} km</span><span class="spec-item"><span class="spec-dot"></span>${c.fuel}</span></div><div class="car-footer"><div class="car-price">€ ${fmt(c.price)} <small>excl.</small></div><div class="car-days">${c.days}d in stock</div></div></div></div>`).join('');
+}
+function filterCars(q){currentSearch=q;renderInventory()}
+function appSetFilter(el,s){document.querySelectorAll('.filter-chip').forEach(e=>e.classList.remove('active'));el.classList.add('active');currentFilter=s;renderInventory()}
+function setGridView(g){document.getElementById('grid-btn').classList.toggle('active',g);document.getElementById('list-btn').classList.toggle('active',!g);document.getElementById('car-grid').style.gridTemplateColumns=g?'repeat(auto-fill,minmax(268px,1fr))':'1fr'}
+
+// ===== DETAIL =====
+function showDetail(id){
+  const c=cars.find(x=>x.id===id);
+  document.getElementById('d-make').textContent=c.make.toUpperCase();
+  document.getElementById('d-model').textContent=c.model;
+  document.getElementById('d-price').innerHTML=`€ ${fmt(c.price)} <small>excl. BTW</small>`;
+  document.getElementById('d-badges').innerHTML=statusBadge(c.status)+`<span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)">${c.kenteken}</span>`;
+  document.getElementById('detail-hero').innerHTML=`<span style="font-size:90px;position:relative;z-index:1">${c.emoji}</span><div style="position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%,rgba(232,240,60,.07) 0%,transparent 60%)"></div>`;
+  document.getElementById('detail-thumbs').innerHTML=[c.emoji,'🚘','⚙','📋'].map((e,i)=>`<div class="thumb ${i===0?'active':''}" onclick="this.parentNode.querySelectorAll('.thumb').forEach(t=>t.classList.remove('active'));this.classList.add('active')">${e}</div>`).join('');
+  const specs=[['Bouwjaar',c.year],['Kleur',c.color],['KM-stand',fmt(c.km)+' km'],['Brandstof',c.fuel],['Transmissie',c.trans],['Kenteken',c.kenteken],['Dagen in stock',c.days+'d'],['Marge','€ '+fmt(marge(c))+' ('+margePct(c)+'%)']];
+  document.getElementById('d-specs').innerHTML=specs.map(([k,v])=>`<div class="spec-row"><div class="spec-key">${k}</div><div class="spec-val">${v}</div></div>`).join('');
+  currentAiCar=c;
+  appShowView('detail');
+}
+
+// ===== FINANCE =====
+function renderFinance(){
+  const totOmzet=omzet.reduce((a,b)=>a+b,0);
+  const totKosten=kosten.reduce((a,b)=>a+b,0);
+  const totWinst=totOmzet-totKosten;
+  const gemMarge=Math.round(totWinst/totOmzet*100);
+  document.getElementById('fin-kpis').innerHTML=`
+    <div class="kpi-card green" style="animation-delay:.05s"><div class="kpi-label">YTD Omzet</div><div class="kpi-value">€${Math.round(totOmzet/1000)}K</div><div class="kpi-sub"><span class="kpi-delta up">▲ +14%</span> t.o.v. vorig jaar</div></div>
+    <div class="kpi-card yellow" style="animation-delay:.10s"><div class="kpi-label">Bruto winst</div><div class="kpi-value">€${Math.round(totWinst/1000)}K</div><div class="kpi-sub"><span class="kpi-delta up">▲ +9%</span> t.o.v. vorig jaar</div></div>
+    <div class="kpi-card blue" style="animation-delay:.15s"><div class="kpi-label">Gem. marge</div><div class="kpi-value">${gemMarge}%</div><div class="kpi-sub"><span class="kpi-delta up">▲ +1.2pp</span> t.o.v. vorig jaar</div></div>
+    <div class="kpi-card red" style="animation-delay:.20s"><div class="kpi-label">Negatieve marge</div><div class="kpi-value">3</div><div class="kpi-sub">voertuigen onder kostprijs</div></div>`;
+  // Margin table
+  document.getElementById('margin-table').innerHTML=cars.map(c=>{
+    const m=marge(c),pct=margePct(c),pos=m>=0;
+    return`<tr onclick="showDetail(${c.id})"><td class="td-main">${c.make} ${c.model}</td><td style="font-size:13.5px;color:var(--text2)">€ ${fmt(c.inkoop)}</td><td style="font-size:13.5px;color:var(--text2)">€ ${fmt(c.price)}</td><td style="font-size:14px;font-weight:600;color:${pos?'var(--green)':'var(--red)'}">€ ${fmt(m)}</td><td><span style="font-size:13px;font-weight:600;color:${pos?'var(--green)':'var(--red)'}">${pct}%</span><div class="margin-bar" style="width:${Math.min(Math.abs(pct)*2,100)}%;background:${pos?'var(--green)':'var(--red)'}"></div></td></tr>`}).join('');
+  // Omzet chart
+  const maxO=Math.max(...omzet);
+  document.getElementById('fin-chart-body').innerHTML=`<div class="bar-chart" style="height:130px">${months.map((m,i)=>`<div class="bar-group"><div class="bar primary" style="height:${Math.round(omzet[i]/maxO*100)}%;background:var(--green)" title="${fmt(omzet[i])}"></div><div class="bar secondary" style="height:${Math.round(kosten[i]/maxO*100)}%" title="${fmt(kosten[i])}"></div><div class="bar-label">${m}</div></div>`).join('')}</div><div class="chart-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Omzet</div><div class="legend-item"><div class="legend-dot" style="background:var(--surface3);border:1px solid var(--border2)"></div>Kosten</div></div>`;
+  // P&L table
+  document.getElementById('pl-table').innerHTML=months.map((m,i)=>{
+    const w=omzet[i]-kosten[i],p=Math.round(w/omzet[i]*100);
+    const trend=i>0?(omzet[i]>omzet[i-1]?'<span style="font-size:14px;color:var(--green)">▲</span>':'<span style="font-size:14px;color:var(--red)">▼</span>'):'—';
+    return`<tr><td class="td-main">${m} 2025</td><td style="font-size:13.5px">€ ${fmt(omzet[i])}</td><td style="font-size:13.5px">€ ${fmt(kosten[i])}</td><td style="font-size:14px;font-weight:600;color:var(--green)">€ ${fmt(w)}</td><td style="font-size:13.5px;font-weight:600">${p}%</td><td style="font-size:16px">${trend}</td></tr>`}).join('');
+}
+
+// ===== EXPORT =====
+function renderExport(){
+  const sel=document.getElementById('export-car-select');
+  sel.innerHTML=cars.map(c=>`<option value="${c.id}">${c.make} ${c.model} (${c.kenteken})</option>`).join('');
+  document.getElementById('platform-list').innerHTML=platforms.map(p=>`<div class="platform-card ${p.id===selectedPlatform?'selected':''}" onclick="selectPlatform('${p.id}',this)"><span style="float:right;color:var(--accent);display:${p.id===selectedPlatform?'inline':'none'}" class="platform-check">✓</span><div style="display:flex;align-items:center;gap:10px"><div style="font-size:22px">${p.icon}</div><div><div class="platform-name">${p.name}</div><div class="platform-desc">${p.desc}</div></div></div></div>`).join('');
+  updateExport();
+}
+function selectPlatform(id,el){
+  selectedPlatform=id;
+  document.querySelectorAll('.platform-card').forEach(c=>{c.classList.remove('selected');c.querySelector('.platform-check').style.display='none'});
+  el.classList.add('selected');el.querySelector('.platform-check').style.display='inline';
+  updateExport();
+}
+function updateExport(){
+  const id=parseInt(document.getElementById('export-car-select').value)||cars[0].id;
+  const c=cars.find(x=>x.id===id)||cars[0];
+  document.getElementById('export-title').value=`${c.make} ${c.model} ${c.year} — ${fmt(c.km)} km — ${c.fuel}`;
+  document.getElementById('export-body').value=`Te koop: ${c.make} ${c.model} (${c.year})\n\nDeze ${c.color.toLowerCase()} ${c.make} ${c.model} is in uitstekende staat en rijdt fantastisch. Met slechts ${fmt(c.km)} km op de teller is dit exemplaar nog lang niet klaar.\n\nSpecificaties:\n• Bouwjaar: ${c.year}\n• Kilometerstand: ${fmt(c.km)} km\n• Brandstof: ${c.fuel}\n• Transmissie: ${c.trans}\n• Kleur: ${c.color}\n• Kenteken: ${c.kenteken}\n\nPrijs: € ${fmt(c.price)} (excl. BTW)\n\nVoor meer informatie of een proefrit, neem gerust contact op!`;
+  document.getElementById('export-specs-content').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:0">${[['Merk',c.make],['Model',c.model],['Bouwjaar',c.year],['KM-stand',fmt(c.km)+' km'],['Brandstof',c.fuel],['Transmissie',c.trans],['Kleur',c.color],['Kenteken',c.kenteken],['Vraagprijs','€ '+fmt(c.price)]].map(([k,v])=>`<div style="padding:7px 0;border-bottom:1px solid var(--border);font-size:12.5px"><span style="color:var(--text3);font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase">${k}</span><br><strong>${v}</strong></div>`).join('')}</div>`;
+  document.getElementById('export-prijs-content').innerHTML=`<div style="display:flex;flex-direction:column;gap:10px"><div style="padding:14px;background:var(--surface2);border:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-bottom:4px">VRAAGPRIJS</div><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:24px;color:var(--accent)">€ ${fmt(c.price)}</div><div style="font-size:11px;color:var(--text2)">excl. BTW</div></div><div style="padding:14px;background:var(--surface2);border:1px solid var(--border)"><div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-bottom:4px">BRUTO MARGE</div><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:var(--green)">€ ${fmt(marge(c))}</div><div style="font-size:11px;color:var(--text2)">${margePct(c)}% op inkoopprijs</div></div></div>`;
+}
+function switchExportTab(el,tab){
+  document.querySelectorAll('.export-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');
+  ['tekst','specs','prijs'].forEach(t=>{document.getElementById('export-tab-'+t).style.display=t===tab?'block':'none'});
+}
+function exportToClipboard(){
+  const title=document.getElementById('export-title').value;
+  const body=document.getElementById('export-body').value;
+  navigator.clipboard.writeText(title+'\n\n'+body).then(()=>{
+    const btn=event.target;btn.textContent='✓ Gekopieerd!';setTimeout(()=>btn.textContent='⎘ Kopiëren',2000);
+  }).catch(()=>alert('Tekst geselecteerd — Ctrl+C om te kopiëren'));
+}
+async function generateExportAI(){
+  const id=parseInt(document.getElementById('export-car-select').value)||cars[0].id;
+  const c=cars.find(x=>x.id===id)||cars[0];
+  const btn=document.getElementById('export-ai-btn');
+  btn.textContent='✦ Bezig…';btn.disabled=true;
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`Schrijf een professionele advertentietekst in het Nederlands voor een autodealer voor dit voertuig:\n\nMerk: ${c.make}\nModel: ${c.model}\nBouwjaar: ${c.year}\nKilometerstand: ${fmt(c.km)} km\nBrandstof: ${c.fuel}\nTransmissie: ${c.trans}\nKleur: ${c.color}\nVraagprijs: € ${fmt(c.price)}\n\nSchrijf een aantrekkelijke advertentietekst van 100-150 woorden. Geen opsomming, gewone alinea's. Eindig met een call-to-action.`}]})});
+    const data=await resp.json();
+    const text=data.content?.map(b=>b.text||'').join('')||'Fout bij genereren.';
+    document.getElementById('export-body').value=text;
+  }catch(e){
+    document.getElementById('export-body').value='Verbindingsfout. Controleer je internetverbinding.';
+  }
+  btn.textContent='✦ Genereer met AI';btn.disabled=false;
+}
+
+// ===== AI ASSISTENT =====
+function renderAI(){
+  const sel=document.getElementById('ai-car-select');
+  sel.innerHTML=cars.map(c=>`<option value="${c.id}">${c.make} ${c.model} (${c.kenteken})</option>`).join('');
+  sel.addEventListener('change',()=>{currentAiCar=cars.find(x=>x.id===parseInt(sel.value))||cars[0]});
+}
+
+async function runAI(type){
+  const carId=parseInt(document.getElementById('ai-car-select').value)||cars[0].id;
+  const c=cars.find(x=>x.id===carId)||cars[0];
+  currentAiCar=c;
+
+  const prompts={
+    advertentie:`Schrijf een professionele advertentietekst in het Nederlands voor:\n${c.make} ${c.model} ${c.year}, ${fmt(c.km)} km, ${c.fuel}, ${c.trans}, ${c.color}, € ${fmt(c.price)} excl. BTW.\nMax 150 woorden. Vriendelijk en overtuigend. Eindig met call-to-action.`,
+    prijsadvies:`Geef een beknopt prijsadvies voor een ${c.make} ${c.model} uit ${c.year} met ${fmt(c.km)} km. Inkoop was € ${fmt(c.inkoop)}, huidige vraagprijs € ${fmt(c.price)}. Is de marge van ${margePct(c)}% realistisch? Geef 3 concrete aanbevelingen. Max 120 woorden.`,
+    seo:`Schrijf een SEO-geoptimaliseerde omschrijving voor: ${c.make} ${c.model} ${c.year} ${c.fuel}. Verwerk relevante zoekwoorden op een natuurlijke manier. Max 120 woorden. Gericht op Nederlandse autodealers.`,
+    checklist:`Geef een inkoop-checklist van 8 punten voor een ${c.make} ${c.model} ${c.year} met ${fmt(c.km)} km. Focus op bekende zwakke punten van dit model. Elk punt max 1 zin.`
+  };
+  const labels={advertentie:'📝 Advertentietekst',prijsadvies:'💶 Prijsadvies',seo:'🔍 SEO-omschrijving',checklist:'✓ Inkoop checklist'};
+
+  const out=document.getElementById('ai-output');
+  const text=document.getElementById('ai-output-text');
+  const label=document.getElementById('ai-output-label');
+  const actions=document.getElementById('ai-output-actions');
+
+  out.classList.add('show');
+  actions.style.display='none';
+  label.textContent='✦ '+labels[type];
+  text.innerHTML='<div class="ai-loading"><div class="ai-spinner"></div> Claude is aan het schrijven…</div>';
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompts[type]}]})});
+    const data=await resp.json();
+    lastAiOutput=data.content?.map(b=>b.text||'').join('')||'Fout: geen antwoord ontvangen.';
+    text.textContent=lastAiOutput;
+    actions.style.display='flex';
+  }catch(e){
+    text.textContent='Verbindingsfout. Probeer het opnieuw.';
+  }
+}
+
+function copyAiOutput(){
+  navigator.clipboard.writeText(lastAiOutput).then(()=>{
+    const btn=document.getElementById('copy-btn');
+    btn.textContent='✓ Gekopieerd!';btn.classList.add('copy-flash');
+    setTimeout(()=>{btn.textContent='⎘ Kopiëren';btn.classList.remove('copy-flash')},2000);
+  });
+}
+function useInExport(){
+  document.getElementById('export-body').value=lastAiOutput;
+  appShowView('export');
+}
+
+// ===== NAV =====
+function appShowView(v){
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  const titleMap={dashboard:'Dashboard',inventory:'Voorraad',detail:'Voertuig details',finance:'Financieel overzicht',export:'Advertentie-export',ai:'AI-assistent'};
+  document.getElementById('topbar-title').textContent=titleMap[v]||v;
+  if(v==='dashboard')renderDashboard();
+  if(v==='inventory')renderInventory();
+  if(v==='finance')renderFinance();
+  if(v==='export')renderExport();
+  if(v==='ai')renderAI();
+  window.scrollTo(0,0);
+}
+function openSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('sidebar-overlay').classList.add('open');document.body.style.overflow='hidden'}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('open');document.body.style.overflow=''}
+function setTheme(t,btn){document.documentElement.setAttribute('data-theme',t);document.querySelectorAll('.theme-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active')}
+function openModal(id){document.getElementById(id).classList.add('open');document.body.style.overflow='hidden'}
+function appCloseModal(id){document.getElementById(id).classList.remove('open');document.body.style.overflow=''}
+function openRdw(){document.getElementById('rdw-input').value='';document.getElementById('rdw-result').classList.remove('show');openModal('rdw-modal');setTimeout(()=>document.getElementById('rdw-input').focus(),150)}
+
+const rdwData={'K-123-XP':{status:'Geen bijzonderheden',ok:true,merk:'Volkswagen',model:'Golf',bouwjaar:'2022',kleur:'Wit',apk:'01-03-2026',gewicht:'1.380 kg',cilinderinhoud:'1.498 cc',vermogen:'110 kW'},'L-456-RB':{status:'Geen bijzonderheden',ok:true,merk:'BMW',model:'3-serie',bouwjaar:'2021',kleur:'Blauw',apk:'15-06-2025',gewicht:'1.610 kg',cilinderinhoud:'1.998 cc',vermogen:'135 kW'}};
+function doRdwCheck(){
+  const raw=document.getElementById('rdw-input').value.replace(/\s/g,'').toUpperCase();
+  const data=rdwData[raw];
+  const result=document.getElementById('rdw-result');
+  if(data){
+    document.getElementById('rdw-dot').style.cssText=`background:${data.ok?'var(--green)':'var(--red)'};box-shadow:0 0 8px ${data.ok?'var(--green)':'var(--red)'}`;
+    document.getElementById('rdw-status-label').textContent=data.status;
+    document.getElementById('rdw-status-sub').textContent=`APK geldig t/m ${data.apk} · Geen diefstalmelding`;
+    document.getElementById('rdw-rows').innerHTML=[['Merk',data.merk],['Model',data.model],['Bouwjaar',data.bouwjaar],['Kleur',data.kleur],['Gewicht',data.gewicht],['Cilinderinhoud',data.cilinderinhoud],['Vermogen',data.vermogen],['APK t/m',data.apk]].map(([k,v])=>`<div class="rdw-row"><div class="rdw-key">${k}</div><div class="rdw-val">${v}</div></div>`).join('');
+  }else{
+    document.getElementById('rdw-dot').style.cssText='background:var(--text3);box-shadow:none';
+    document.getElementById('rdw-status-label').textContent='Geen resultaat';
+    document.getElementById('rdw-status-sub').textContent='Probeer K-123-XP of L-456-RB (demo)';
+    document.getElementById('rdw-rows').innerHTML='';
+  }
+  result.classList.add('show');
+}
+document.getElementById('rdw-input').addEventListener('keydown',e=>{if(e.key==='Enter')doRdwCheck()});
+
+renderDashboard();
+
+
+/* ── Auth / routing JS ── */
 // ═══════════════════════════════════════
 //  SUPABASE CONFIG  ← verander deze twee regels
 // ═══════════════════════════════════════
