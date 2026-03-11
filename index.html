@@ -1321,7 +1321,9 @@ async function uploadPhotos(carId) {
         },
         body: fd
       });
-      data = await res.json();
+      const rawText = await res.text();
+      console.log('Upload response status:', res.status, 'body:', rawText);
+      try { data = JSON.parse(rawText); } catch(e) { data = { error: rawText }; }
     } catch(e) {
       toast('⚠ Upload mislukt: ' + e.message, 'var(--orange)');
       continue;
