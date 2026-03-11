@@ -1340,7 +1340,7 @@ async function doLogin() {
   const pwd   = document.getElementById('l-pwd').value;
 
   if (!email || !pwd) {
-    showAlert('l-err', 'Vul je e-mailadres en wachtwoord in.');
+   showAlert('l-err', e.message);
     return;
   }
 
