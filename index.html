@@ -1021,7 +1021,7 @@ async function loadCars() {
   appState.loading = true;
   try {
     const { data, error } = await sb
-      .from('cars')
+      .from('cars_with_days')
       .select('*, car_images(url, is_primary, sort_order)')
       .eq('company_id', appState.companyId)
       .order('created_at', { ascending: false });
