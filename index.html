@@ -2050,6 +2050,45 @@ document.addEventListener('keydown',e=>{
   if(el('aform-login').classList.contains('active')) doLogin();
   else doRegister();
 });
+
+/* ══════════════════════════════════════════
+   LIGHTBOX
+══════════════════════════════════════════ */
+let lightboxImages = [];
+let lightboxIndex  = 0;
+
+function openLightbox(images, startIndex) {
+  lightboxImages = Array.isArray(images) ? images : [images];
+  lightboxIndex  = parseInt(startIndex) || 0;
+  document.getElementById('lightbox-img').src = lightboxImages[lightboxIndex];
+  document.getElementById('lightbox-counter').textContent = (lightboxIndex+1) + ' / ' + lightboxImages.length;
+  document.getElementById('lightbox-prev').style.display = lightboxImages.length > 1 ? 'block' : 'none';
+  document.getElementById('lightbox-next').style.display = lightboxImages.length > 1 ? 'block' : 'none';
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox(e) {
+  if (e.target === document.getElementById('lightbox')) closeLightboxBtn();
+}
+
+function closeLightboxBtn() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function lightboxNav(dir) {
+  lightboxIndex = (lightboxIndex + dir + lightboxImages.length) % lightboxImages.length;
+  document.getElementById('lightbox-img').src = lightboxImages[lightboxIndex];
+  document.getElementById('lightbox-counter').textContent = (lightboxIndex+1) + ' / ' + lightboxImages.length;
+}
+
+document.addEventListener('keydown', function(e) {
+  if (!document.getElementById('lightbox').classList.contains('open')) return;
+  if (e.key === 'Escape')     closeLightboxBtn();
+  if (e.key === 'ArrowLeft')  lightboxNav(-1);
+  if (e.key === 'ArrowRight') lightboxNav(1);
+});
 </script>
   <!-- LIGHTBOX -->
   <div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
