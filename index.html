@@ -5,52 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AutoPanel — Voorraadbeheer</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-
-/* ══════════════════════════════════════════
-   LIGHTBOX
-══════════════════════════════════════════ */
-let lightboxImages = [];
-let lightboxIndex  = 0;
-
-function openLightbox(images, startIndex) {
-  lightboxImages = images;
-  lightboxIndex  = startIndex || 0;
-  updateLightbox();
-  el('lightbox').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function updateLightbox() {
-  const img = lightboxImages[lightboxIndex];
-  el('lightbox-img').src = img;
-  el('lightbox-counter').textContent = (lightboxIndex + 1) + ' / ' + lightboxImages.length;
-  el('lightbox-prev').style.display = lightboxImages.length > 1 ? 'block' : 'none';
-  el('lightbox-next').style.display = lightboxImages.length > 1 ? 'block' : 'none';
-}
-
-function closeLightbox(e) {
-  if (e.target === el('lightbox')) closeLightboxBtn();
-}
-
-function closeLightboxBtn() {
-  el('lightbox').classList.remove('open');
-  document.body.style.overflow = '';
-}
-
-function lightboxNav(dir) {
-  lightboxIndex = (lightboxIndex + dir + lightboxImages.length) % lightboxImages.length;
-  updateLightbox();
-}
-
-// Keyboard navigatie
-document.addEventListener('keydown', function(e) {
-  if (!el('lightbox').classList.contains('open')) return;
-  if (e.key === 'Escape')      closeLightboxBtn();
-  if (e.key === 'ArrowLeft')   lightboxNav(-1);
-  if (e.key === 'ArrowRight')  lightboxNav(1);
-});
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 /* ════════════════════════════════════════════════════
    RESET & THEMA-VARIABELEN
