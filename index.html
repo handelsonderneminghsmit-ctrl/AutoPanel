@@ -594,6 +594,28 @@ tr:hover td{background:var(--surface2);cursor:pointer}
 .task-kosten{color:var(--green);font-weight:600}
 .tasks-group-header{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);padding:8px 0 6px;border-bottom:1px solid var(--border);margin-bottom:8px;margin-top:16px}
 .tasks-group-header:first-child{margin-top:0}
+
+/* ─── CRM ─────────────────────────────────── */
+.customer-card{background:var(--surface);border:1px solid var(--border);padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:border-color .15s,transform .15s;display:flex;align-items:center;gap:14px}
+.customer-card:hover{border-color:var(--border2);transform:translateX(2px)}
+.customer-avatar{width:40px;height:40px;border-radius:50%;background:var(--accent-dim);border:1.5px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--accent);flex-shrink:0;font-family:'Syne',sans-serif}
+.customer-info{flex:1;min-width:0}
+.customer-naam{font-weight:600;font-size:13.5px;color:var(--text)}
+.customer-meta{font-size:11px;color:var(--text3);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap}
+.customer-stats{display:flex;gap:12px;flex-shrink:0;font-size:11px;text-align:center}
+.customer-stat{display:flex;flex-direction:column;align-items:center;gap:2px}
+.customer-stat-val{font-weight:700;font-size:14px;color:var(--text);font-family:'Syne',sans-serif}
+.customer-stat-lbl{color:var(--text3);font-size:10px}
+.contact-item{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start}
+.contact-item:last-child{border-bottom:none}
+.contact-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;background:var(--surface2)}
+.contact-body{flex:1;min-width:0}
+.contact-type{font-weight:600;font-size:12px;color:var(--text)}
+.contact-meta{font-size:11px;color:var(--text3);margin-top:2px}
+.cd-row{display:flex;gap:12px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
+.cd-row:last-child{border-bottom:none}
+.cd-key{color:var(--text3);font-size:11px;font-family:'DM Mono',monospace;text-transform:uppercase;min-width:110px;flex-shrink:0;padding-top:1px}
+.cd-val{color:var(--text);flex:1}
 </style>
 </head>
 <body>
@@ -708,6 +730,7 @@ tr:hover td{background:var(--surface2);cursor:pointer}
       <div class="sb-section">Analyse</div>
       <div class="sb-item" id="nav-finance" onclick="appShowView('finance');closeSidebar()"><span class="icon">◈</span>Analytics</div>
       <div class="sb-item" id="nav-tasks" onclick="appShowView('tasks');closeSidebar()"><span class="icon">☑</span>Taken<span class="sb-badge alert" id="tasks-badge" style="display:none">0</span></div>
+      <div class="sb-item" id="nav-crm" onclick="appShowView('crm');closeSidebar()"><span class="icon">👥</span>Klanten<span class="sb-badge" id="crm-badge" style="display:none">0</span></div>
       <div class="sb-item" id="nav-export" onclick="appShowView('export');closeSidebar()"><span class="icon">↗</span>Advertentie-export</div>
       <div class="sb-item" id="nav-ai" onclick="appShowView('ai');closeSidebar()"><span class="icon">◎</span>AI-assistent<span class="sb-badge" style="background:var(--teal);color:#000">Nieuw</span></div>
       <div class="sb-section">Handel</div>
@@ -1004,6 +1027,70 @@ tr:hover td{background:var(--surface2);cursor:pointer}
         </div>
       </div>
 
+      <!-- CRM -->
+      <div class="app-view" id="app-view-crm">
+        <div class="section-header">
+          <div class="section-title">Klantenbeheer</div>
+          <button class="btn btn-primary btn-sm" onclick="openCustomerModal()">+ Nieuwe klant</button>
+        </div>
+        <div class="inventory-toolbar" style="margin-bottom:12px">
+          <div class="search-box"><span style="color:var(--text3);font-size:13px">⌕</span><input type="text" id="crm-search" placeholder="Zoek naam, email, telefoon…" oninput="renderCRM()"></div>
+          <div class="filter-chips">
+            <div class="filter-chip active" onclick="setCRMFilter('Alle',this)">Alle</div>
+            <div class="filter-chip" onclick="setCRMFilter('Actief',this)">Actief</div>
+            <div class="filter-chip" onclick="setCRMFilter('Prospect',this)">Prospect</div>
+            <div class="filter-chip" onclick="setCRMFilter('Inactief',this)">Inactief</div>
+          </div>
+          <span class="inventory-count" id="crm-count"></span>
+        </div>
+        <div id="crm-list"></div>
+      </div>
+
+      <!-- KLANT DETAIL -->
+      <div class="app-view" id="app-view-crm-detail">
+        <div class="detail-back" onclick="appShowView('crm')">← Terug naar klanten</div>
+        <div class="detail-grid">
+          <div class="detail-main">
+            <div class="detail-panel">
+              <div class="panel-header">
+                <div>
+                  <div class="panel-title" id="cd-naam"></div>
+                  <div style="font-size:12px;color:var(--text3);margin-top:2px" id="cd-status-badge"></div>
+                </div>
+                <button class="btn btn-ghost btn-sm" id="cd-edit-btn">✎ Bewerken</button>
+              </div>
+              <div class="panel-body" id="cd-profiel"></div>
+            </div>
+            <div class="detail-panel">
+              <div class="panel-header"><div class="panel-title">Interesses</div></div>
+              <div class="panel-body" id="cd-interesses"></div>
+            </div>
+            <div class="detail-panel">
+              <div class="panel-header"><div class="panel-title">Aankoopgeschiedenis</div></div>
+              <div id="cd-aankopen"></div>
+            </div>
+            <div class="detail-panel">
+              <div class="panel-header"><div class="panel-title">Inruilgeschiedenis</div></div>
+              <div id="cd-inruil"></div>
+            </div>
+          </div>
+          <div class="detail-side">
+            <div class="detail-panel">
+              <div class="panel-header"><div class="panel-title">Contactmomenten</div><button class="btn btn-ghost btn-sm" onclick="openContactModal()">+ Toevoegen</button></div>
+              <div id="cd-contact-list"></div>
+            </div>
+            <div class="detail-panel">
+              <div class="panel-header"><div class="panel-title">Financiering</div></div>
+              <div class="panel-body" id="cd-financiering"></div>
+            </div>
+            <div class="detail-panel">
+              <div class="panel-header"><div class="panel-title">Notities</div></div>
+              <div class="panel-body" id="cd-notes"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- TAKEN -->
       <div class="app-view" id="app-view-tasks">
         <div class="section-header">
@@ -1172,6 +1259,11 @@ let appState = {
   sales: [],
   tasks: [],
   taskFilter: 'alle',
+  customers: [],
+  contactMoments: [],
+  tradeIns: [],
+  crmFilter: 'Alle',
+  currentCustomerId: null,
   cars: [],           // live data uit Supabase
   loading: true,
   currentFilter: 'Alle',
@@ -1271,7 +1363,7 @@ async function routeUser(user) {
 async function loadCars() {
   appState.loading = true;
   try {
-    const [carsRes, salesRes, tasksRes] = await Promise.all([
+    const [carsRes, salesRes, tasksRes, customersRes, contactsRes, tradeInsRes] = await Promise.all([
       sb.from('cars_with_days')
         .select('*, car_images(url, is_primary, sort_order)')
         .eq('company_id', appState.companyId)
@@ -1283,13 +1375,28 @@ async function loadCars() {
       sb.from('tasks')
         .select('*')
         .eq('company_id', appState.companyId)
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: false }),
+      sb.from('customers')
+        .select('*')
+        .eq('company_id', appState.companyId)
+        .order('achternaam', { ascending: true }),
+      sb.from('contact_moments')
+        .select('*')
+        .eq('company_id', appState.companyId)
+        .order('datum', { ascending: false }),
+      sb.from('trade_ins')
+        .select('*')
+        .eq('company_id', appState.companyId)
+        .order('datum', { ascending: false })
     ]);
 
     if (carsRes.error) throw carsRes.error;
     appState.cars  = carsRes.data || [];
     appState.sales = salesRes.data || [];
-    appState.tasks = tasksRes.data || [];
+    appState.tasks         = tasksRes.data       || [];
+    appState.customers     = customersRes.data    || [];
+    appState.contactMoments= contactsRes.data     || [];
+    appState.tradeIns      = tradeInsRes.data     || [];
     updateTasksBadge();
     appState.loading = false;
     updateNavCount();
@@ -1707,7 +1814,7 @@ function switchTab(t) {
 /* ══════════════════════════════════════════
    APP NAVIGATIE
 ══════════════════════════════════════════ */
-const titleMap = {dashboard:'Dashboard',inventory:'Voorraad',detail:'Voertuig details',finance:'Analytics',tasks:'Taken',export:'Advertentie-export',ai:'AI-assistent'};
+const titleMap = {dashboard:'Dashboard',inventory:'Voorraad',detail:'Voertuig details',finance:'Analytics',tasks:'Taken',crm:'Klantenbeheer','crm-detail':'Klant details',export:'Advertentie-export',ai:'AI-assistent'};
 
 function appShowView(v) {
   document.querySelectorAll('.app-view').forEach(e=>e.classList.remove('active'));
@@ -1719,6 +1826,7 @@ function appShowView(v) {
   if(v==='inventory') renderInventory();
   if(v==='finance')   renderFinance();
   if(v==='tasks')     renderTasks();
+  if(v==='crm')       renderCRM();
   if(v==='export')    renderExport();
   if(v==='ai')        renderAI();
   window.scrollTo(0,0);
@@ -2521,6 +2629,7 @@ async function saveSale() {
     const { error: saleErr } = await sb.from('sales').insert({
       car_id:          carId,
       company_id:      appState.companyId,
+      customer_id:     el('sl-customer')?.value || null,
       verkoop_prijs:   prijs,
       verkoop_datum:   datum,
       koper_naam:      v('sl-koper-naam') || null,
@@ -2550,6 +2659,269 @@ async function saveSale() {
   }
 }
 
+
+
+/* ══════════════════════════════════════════
+   CRM — Klantenbeheer
+══════════════════════════════════════════ */
+function setCRMFilter(f, el_) {
+  appState.crmFilter = f;
+  document.querySelectorAll('#app-view-crm .filter-chip').forEach(e => e.classList.remove('active'));
+  if (el_) el_.classList.add('active');
+  renderCRM();
+}
+
+function renderCRM() {
+  const q = (el('crm-search')?.value||'').toLowerCase();
+  const f = appState.crmFilter || 'Alle';
+  let list = (appState.customers||[]).filter(function(c) {
+    if (f !== 'Alle' && c.status !== f) return false;
+    if (q && !(c.voornaam+' '+c.achternaam+' '+(c.email||'')+' '+(c.telefoon||'')+' '+(c.mobiel||'')).toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  el('crm-count').textContent = list.length + ' klanten';
+  if (!list.length) {
+    el('crm-list').innerHTML = '<div style="text-align:center;padding:48px 0;color:var(--text3)"><div style="font-size:36px;margin-bottom:12px">👥</div><div>Geen klanten gevonden</div><button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="openCustomerModal()">+ Eerste klant toevoegen</button></div>';
+    return;
+  }
+
+  el('crm-list').innerHTML = list.map(function(c) {
+    const initials = (c.voornaam[0]||'') + (c.achternaam[0]||'');
+    const aankopen = (appState.sales||[]).filter(s => s.customer_id === c.id).length;
+    const contacts = (appState.contactMoments||[]).filter(m => m.customer_id === c.id).length;
+    const inruilen = (appState.tradeIns||[]).filter(t => t.customer_id === c.id).length;
+    return '<div class="customer-card" data-cid="'+c.id+'" onclick="showCustomer(this.dataset.cid)">'
+      + '<div class="customer-avatar">'+initials.toUpperCase()+'</div>'
+      + '<div class="customer-info">'
+      + '<div class="customer-naam">'+c.voornaam+' '+c.achternaam+'</div>'
+      + '<div class="customer-meta">'
+      + (c.email    ? '<span>✉ '+c.email+'</span>' : '')
+      + (c.telefoon ? '<span>📞 '+c.telefoon+'</span>' : '')
+      + (c.stad     ? '<span>📍 '+c.stad+'</span>' : '')
+      + (c.interesse_type ? '<span>🔍 zoekt '+c.interesse_type+'</span>' : '')
+      + '</div></div>'
+      + '<div class="customer-stats">'
+      + '<div class="customer-stat"><div class="customer-stat-val">'+aankopen+'</div><div class="customer-stat-lbl">aankopen</div></div>'
+      + '<div class="customer-stat"><div class="customer-stat-val">'+contacts+'</div><div class="customer-stat-lbl">contacten</div></div>'
+      + '<div class="customer-stat"><div class="customer-stat-val">'+inruilen+'</div><div class="customer-stat-lbl">inruilen</div></div>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function showCustomer(id) {
+  const c = (appState.customers||[]).find(x => x.id === id);
+  if (!c) return;
+  appState.currentCustomerId = id;
+
+  el('cd-naam').textContent = c.voornaam + ' ' + c.achternaam;
+  el('cd-status-badge').innerHTML = statusBadge(c.status);
+  el('cd-edit-btn').onclick = () => openCustomerModal(id);
+
+  // Profiel
+  const profielRows = [
+    ['Email', c.email ? '<a href="mailto:'+c.email+'" style="color:var(--accent)">'+c.email+'</a>' : '—'],
+    ['Telefoon', c.telefoon || '—'],
+    ['Mobiel', c.mobiel || '—'],
+    ['Adres', [c.straat, c.huisnummer].filter(Boolean).join(' ') || '—'],
+    ['Postcode/Stad', [c.postcode, c.stad].filter(Boolean).join(' ') || '—'],
+    ['Land', c.land || '—'],
+    ['Geboortedatum', c.geboortedatum ? fmtDate(c.geboortedatum) : '—'],
+    ['Bron', c.bron || '—'],
+  ];
+  el('cd-profiel').innerHTML = profielRows.map(function(r){ return '<div class="cd-row"><div class="cd-key">'+r[0]+'</div><div class="cd-val">'+r[1]+'</div></div>'; }).join('');
+
+  // Interesses
+  const intRows = [
+    ['Merk', c.interesse_merk || '—'],
+    ['Type', c.interesse_type || '—'],
+    ['Budget', c.interesse_budget_min || c.interesse_budget_max ? (fmtEur(c.interesse_budget_min||0) + ' – ' + fmtEur(c.interesse_budget_max||0)) : '—'],
+    ['Notities', c.interesse_notes || '—'],
+  ];
+  el('cd-interesses').innerHTML = intRows.map(function(r){ return '<div class="cd-row"><div class="cd-key">'+r[0]+'</div><div class="cd-val">'+r[1]+'</div></div>'; }).join('');
+
+  // Financiering
+  const finRows = [
+    ['Financiering', c.financiering ? 'Ja' : 'Nee'],
+    ['Maatschappij', c.financiering_maatschappij || '—'],
+    ['Notities', c.financiering_notes || '—'],
+  ];
+  el('cd-financiering').innerHTML = finRows.map(function(r){ return '<div class="cd-row"><div class="cd-key">'+r[0]+'</div><div class="cd-val">'+r[1]+'</div></div>'; }).join('');
+
+  // Notities
+  el('cd-notes').innerHTML = c.notes ? '<p style="font-size:13px;line-height:1.6;color:var(--text2)">'+c.notes+'</p>' : '<p style="color:var(--text3);font-size:12px">Geen notities</p>';
+
+  // Aankoopgeschiedenis
+  const aankopen = (appState.sales||[]).filter(s => s.customer_id === id);
+  el('cd-aankopen').innerHTML = aankopen.length ? aankopen.map(function(s) {
+    const car = (appState.cars||[]).find(c => c.id === s.car_id);
+    return '<div class="tl-item"><div class="tl-dot green"></div><div class="tl-body">'
+      + '<div class="tl-title">'+(car ? car.make+' '+car.model+' ('+car.year+')' : 'Onbekend voertuig')+'</div>'
+      + '<div class="tl-meta">'+fmtDate(s.verkoop_datum)+' · '+fmtEur(s.verkoop_prijs)+(s.verkoper_naam?' · '+s.verkoper_naam:'')+'</div>'
+      + '</div></div>';
+  }).join('') : '<div style="padding:12px 18px;color:var(--text3);font-size:12px">Geen aankopen</div>';
+
+  // Inruilgeschiedenis
+  const inruilen = (appState.tradeIns||[]).filter(t => t.customer_id === id);
+  el('cd-inruil').innerHTML = inruilen.length ? inruilen.map(function(t) {
+    return '<div class="tl-item"><div class="tl-dot blue"></div><div class="tl-body">'
+      + '<div class="tl-title">'+t.merk+' '+t.model+(t.jaar?' ('+t.jaar+')':'')+'</div>'
+      + '<div class="tl-meta">'+fmtDate(t.datum)+(t.km?' · '+fmt(t.km)+' km':'')+(t.inruil_waarde?' · '+fmtEur(t.inruil_waarde):'')+(t.kenteken?' · '+t.kenteken:'')+'</div>'
+      + '</div></div>';
+  }).join('') : '<div style="padding:12px 18px;color:var(--text3);font-size:12px">Geen inruilen</div>';
+
+  // Contactmomenten
+  const contacts = (appState.contactMoments||[]).filter(m => m.customer_id === id);
+  const contactIcons = { Bellen:'📞', Email:'✉', Bezoek:'🤝', WhatsApp:'💬', Overig:'📋' };
+  el('cd-contact-list').innerHTML = contacts.length ? contacts.map(function(m) {
+    return '<div class="contact-item">'
+      + '<div class="contact-icon">'+(contactIcons[m.type]||'📋')+'</div>'
+      + '<div class="contact-body">'
+      + '<div class="contact-type">'+m.type+' · '+(m.richting||'')+'</div>'
+      + (m.onderwerp ? '<div style="font-size:12px;color:var(--text);margin-top:2px">'+m.onderwerp+'</div>' : '')
+      + (m.notitie   ? '<div style="font-size:11px;color:var(--text2);margin-top:2px">'+m.notitie+'</div>' : '')
+      + '<div class="contact-meta">'+(m.medewerker?m.medewerker+' · ':'')+fmtDate(m.datum)+'</div>'
+      + '</div></div>';
+  }).join('') : '<div style="padding:12px 18px;color:var(--text3);font-size:12px">Geen contactmomenten</div>';
+
+  appShowView('crm-detail');
+}
+
+function openContactModal() {
+  el('ct-type').value      = 'Bellen';
+  el('ct-richting').value  = 'Inkomend';
+  el('ct-onderwerp').value = '';
+  el('ct-notitie').value   = '';
+  el('ct-medewerker').value= '';
+  el('ct-datum').value     = new Date().toISOString().slice(0,16);
+  hideEl('ct-err');
+  openModal('contact-modal');
+}
+
+function closeContactModal() { appCloseModal('contact-modal'); }
+
+async function saveContact() {
+  const cid = appState.currentCustomerId;
+  if (!cid) return;
+  setBtn('ct-save-btn', true, 'Opslaan…');
+  try {
+    const { error } = await sb.from('contact_moments').insert({
+      customer_id:  cid,
+      company_id:   appState.companyId,
+      type:         el('ct-type').value,
+      richting:     el('ct-richting').value,
+      onderwerp:    el('ct-onderwerp').value.trim() || null,
+      notitie:      el('ct-notitie').value.trim() || null,
+      medewerker:   el('ct-medewerker').value.trim() || null,
+      datum:        el('ct-datum').value || new Date().toISOString(),
+    });
+    if (error) throw error;
+    closeContactModal();
+    await loadCars();
+    showCustomer(cid);
+    toast('✓ Contactmoment toegevoegd');
+  } catch(e) {
+    showAlert('ct-err', 'Fout: '+e.message);
+  } finally {
+    setBtn('ct-save-btn', false, 'Opslaan');
+  }
+}
+
+function openCustomerModal(customerId) {
+  appState.editingCustomerId = customerId || null;
+  const c = customerId ? (appState.customers||[]).find(x => x.id === customerId) : null;
+
+  el('cm-modal-title').textContent = c ? 'Klant bewerken' : 'Nieuwe klant';
+  el('cm-voornaam').value          = c?.voornaam           || '';
+  el('cm-achternaam').value        = c?.achternaam         || '';
+  el('cm-email').value             = c?.email              || '';
+  el('cm-telefoon').value          = c?.telefoon           || '';
+  el('cm-mobiel').value            = c?.mobiel             || '';
+  el('cm-geboortedatum').value     = c?.geboortedatum      || '';
+  el('cm-straat').value            = c?.straat             || '';
+  el('cm-huisnummer').value        = c?.huisnummer         || '';
+  el('cm-postcode').value          = c?.postcode           || '';
+  el('cm-stad').value              = c?.stad               || '';
+  el('cm-bron').value              = c?.bron               || '';
+  el('cm-status').value            = c?.status             || 'Actief';
+  el('cm-interesse-merk').value    = c?.interesse_merk     || '';
+  el('cm-interesse-type').value    = c?.interesse_type     || '';
+  el('cm-budget-min').value        = c?.interesse_budget_min || '';
+  el('cm-budget-max').value        = c?.interesse_budget_max || '';
+  el('cm-interesse-notes').value   = c?.interesse_notes    || '';
+  el('cm-financiering').checked    = c?.financiering       || false;
+  el('cm-fin-mij').value           = c?.financiering_maatschappij || '';
+  el('cm-fin-notes').value         = c?.financiering_notes || '';
+  el('cm-notes').value             = c?.notes              || '';
+  el('cm-delete-btn').style.display = c ? 'block' : 'none';
+  hideEl('cm-err');
+  openModal('customer-modal');
+}
+
+function closeCustomerModal() { appCloseModal('customer-modal'); appState.editingCustomerId = null; }
+
+async function saveCustomer() {
+  hideEl('cm-err');
+  const voornaam   = el('cm-voornaam').value.trim();
+  const achternaam = el('cm-achternaam').value.trim();
+  if (!voornaam || !achternaam) { showAlert('cm-err','Voornaam en achternaam zijn verplicht.'); return; }
+
+  const payload = {
+    company_id:                   appState.companyId,
+    voornaam, achternaam,
+    email:                        el('cm-email').value.trim()           || null,
+    telefoon:                     el('cm-telefoon').value.trim()        || null,
+    mobiel:                       el('cm-mobiel').value.trim()          || null,
+    geboortedatum:                el('cm-geboortedatum').value          || null,
+    straat:                       el('cm-straat').value.trim()          || null,
+    huisnummer:                   el('cm-huisnummer').value.trim()      || null,
+    postcode:                     el('cm-postcode').value.trim()        || null,
+    stad:                         el('cm-stad').value.trim()            || null,
+    bron:                         el('cm-bron').value.trim()            || null,
+    status:                       el('cm-status').value,
+    interesse_merk:               el('cm-interesse-merk').value.trim()  || null,
+    interesse_type:               el('cm-interesse-type').value.trim()  || null,
+    interesse_budget_min:         parseFloat(el('cm-budget-min').value) || null,
+    interesse_budget_max:         parseFloat(el('cm-budget-max').value) || null,
+    interesse_notes:              el('cm-interesse-notes').value.trim() || null,
+    financiering:                 el('cm-financiering').checked,
+    financiering_maatschappij:    el('cm-fin-mij').value.trim()         || null,
+    financiering_notes:           el('cm-fin-notes').value.trim()       || null,
+    notes:                        el('cm-notes').value.trim()           || null,
+  };
+
+  setBtn('cm-save-btn', true, 'Opslaan…');
+  try {
+    let error, data;
+    if (appState.editingCustomerId) {
+      ({ error } = await sb.from('customers').update(payload).eq('id', appState.editingCustomerId));
+    } else {
+      ({ data, error } = await sb.from('customers').insert(payload).select('id').single());
+    }
+    if (error) throw error;
+    const savedId = appState.editingCustomerId || data?.id;
+    closeCustomerModal();
+    await loadCars();
+    if (savedId) showCustomer(savedId);
+    else renderCRM();
+    toast(appState.editingCustomerId ? '✓ Klant bijgewerkt' : '✓ Klant toegevoegd');
+  } catch(e) {
+    showAlert('cm-err', 'Fout: '+e.message);
+  } finally {
+    setBtn('cm-save-btn', false, 'Opslaan');
+  }
+}
+
+async function deleteCustomer() {
+  if (!appState.editingCustomerId) return;
+  const { error } = await sb.from('customers').delete().eq('id', appState.editingCustomerId);
+  if (error) { toast('Fout: '+error.message,'var(--red)'); return; }
+  closeCustomerModal();
+  await loadCars();
+  appShowView('crm');
+  toast('🗑 Klant verwijderd','var(--orange)');
+}
 
 /* ══════════════════════════════════════════
    TAKENSYSTEEM
@@ -2786,6 +3158,7 @@ document.addEventListener('keydown', function(e) {
           <div class="form-group"><label>Koper naam</label><input type="text" id="sl-koper-naam" placeholder="Jan de Vries"></div>
           <div class="form-group"><label>Koper telefoon</label><input type="tel" id="sl-koper-tel" placeholder="+31 6 12345678"></div>
           <div class="form-group" style="grid-column:1/-1"><label>Koper e-mail</label><input type="email" id="sl-koper-email" placeholder="jan@email.nl"></div>
+          <div class="form-group" style="grid-column:1/-1"><label>Koper koppelen aan klant</label><select id="sl-customer"><option value="">— Niet koppelen / nieuwe klant —</option></select></div>
           <div class="form-group" style="grid-column:1/-1"><label>Verkoper (medewerker)</label><input type="text" id="sl-verkoper" placeholder="Naam medewerker"></div>
           <div class="form-group" style="grid-column:1/-1"><label>Notities</label><textarea id="sl-notes" rows="2" placeholder="Opmerkingen bij deze verkoop…" style="resize:vertical"></textarea></div>
         </div>
@@ -2798,6 +3171,82 @@ document.addEventListener('keydown', function(e) {
     </div>
   </div>
 
+
+
+  <!-- KLANT MODAL -->
+  <div class="modal-backdrop" id="customer-modal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <div class="modal-title" id="cm-modal-title">Nieuwe klant</div>
+        <button class="modal-close" onclick="closeCustomerModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Persoonlijke gegevens</div>
+        <div class="form-grid" style="gap:12px;margin-bottom:16px">
+          <div class="form-group"><label>Voornaam *</label><input type="text" id="cm-voornaam" placeholder="Jan"></div>
+          <div class="form-group"><label>Achternaam *</label><input type="text" id="cm-achternaam" placeholder="de Vries"></div>
+          <div class="form-group"><label>Email</label><input type="email" id="cm-email" placeholder="jan@email.nl"></div>
+          <div class="form-group"><label>Telefoon</label><input type="tel" id="cm-telefoon" placeholder="+31 20 123 4567"></div>
+          <div class="form-group"><label>Mobiel</label><input type="tel" id="cm-mobiel" placeholder="+31 6 12345678"></div>
+          <div class="form-group"><label>Geboortedatum</label><input type="date" id="cm-geboortedatum"></div>
+          <div class="form-group"><label>Straat</label><input type="text" id="cm-straat" placeholder="Hoofdstraat"></div>
+          <div class="form-group"><label>Huisnummer</label><input type="text" id="cm-huisnummer" placeholder="12A"></div>
+          <div class="form-group"><label>Postcode</label><input type="text" id="cm-postcode" placeholder="1234 AB"></div>
+          <div class="form-group"><label>Stad</label><input type="text" id="cm-stad" placeholder="Amsterdam"></div>
+          <div class="form-group"><label>Bron</label><input type="text" id="cm-bron" placeholder="Marktplaats, Doorverwijzing…"></div>
+          <div class="form-group"><label>Status</label><select id="cm-status"><option value="Actief">Actief</option><option value="Prospect">Prospect</option><option value="Inactief">Inactief</option></select></div>
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Interesses</div>
+        <div class="form-grid" style="gap:12px;margin-bottom:16px">
+          <div class="form-group"><label>Merk voorkeur</label><input type="text" id="cm-interesse-merk" placeholder="BMW, Audi…"></div>
+          <div class="form-group"><label>Type voertuig</label><input type="text" id="cm-interesse-type" placeholder="SUV, Sedan…"></div>
+          <div class="form-group"><label>Budget min (€)</label><input type="number" id="cm-budget-min" placeholder="10000" min="0"></div>
+          <div class="form-group"><label>Budget max (€)</label><input type="number" id="cm-budget-max" placeholder="30000" min="0"></div>
+          <div class="form-group" style="grid-column:1/-1"><label>Interesse notities</label><textarea id="cm-interesse-notes" rows="2" placeholder="Zoekt een 7-zitter, max 50.000 km…" style="resize:vertical"></textarea></div>
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Financiering</div>
+        <div class="form-grid" style="gap:12px;margin-bottom:16px">
+          <div class="form-group" style="grid-column:1/-1;display:flex;align-items:center;gap:10px"><input type="checkbox" id="cm-financiering" style="width:16px;height:16px"><label style="margin:0">Klant wil financiering</label></div>
+          <div class="form-group"><label>Maatschappij</label><input type="text" id="cm-fin-mij" placeholder="Volkswagen Bank…"></div>
+          <div class="form-group"><label>Financiering notities</label><input type="text" id="cm-fin-notes" placeholder=""></div>
+        </div>
+        <div class="form-group" style="grid-column:1/-1"><label>Algemene notities</label><textarea id="cm-notes" rows="3" style="resize:vertical"></textarea></div>
+        <div class="alert alert-err" id="cm-err" style="margin-top:14px"></div>
+      </div>
+      <div class="modal-footer" style="justify-content:space-between">
+        <button class="btn btn-danger btn-sm" id="cm-delete-btn" onclick="deleteCustomer()" style="display:none">🗑 Verwijderen</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" onclick="closeCustomerModal()">Annuleren</button>
+          <button class="btn btn-primary" id="cm-save-btn" onclick="saveCustomer()">Opslaan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTACT MODAL -->
+  <div class="modal-backdrop" id="contact-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">Contactmoment toevoegen</div>
+        <button class="modal-close" onclick="closeContactModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid" style="gap:12px">
+          <div class="form-group"><label>Type</label><select id="ct-type"><option>Bellen</option><option>Email</option><option>Bezoek</option><option>WhatsApp</option><option>Overig</option></select></div>
+          <div class="form-group"><label>Richting</label><select id="ct-richting"><option>Inkomend</option><option>Uitgaand</option></select></div>
+          <div class="form-group" style="grid-column:1/-1"><label>Onderwerp</label><input type="text" id="ct-onderwerp" placeholder="Interesse in VW Golf…"></div>
+          <div class="form-group" style="grid-column:1/-1"><label>Notitie</label><textarea id="ct-notitie" rows="3" style="resize:vertical"></textarea></div>
+          <div class="form-group"><label>Medewerker</label><input type="text" id="ct-medewerker" placeholder="Naam"></div>
+          <div class="form-group"><label>Datum &amp; tijd</label><input type="datetime-local" id="ct-datum"></div>
+        </div>
+        <div class="alert alert-err" id="ct-err" style="margin-top:14px"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeContactModal()">Annuleren</button>
+        <button class="btn btn-primary" id="ct-save-btn" onclick="saveContact()">Opslaan</button>
+      </div>
+    </div>
+  </div>
 
   <!-- TAAK MODAL -->
   <div class="modal-backdrop" id="task-modal">
