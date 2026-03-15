@@ -647,6 +647,18 @@ tr:hover td{background:var(--surface2);cursor:pointer}
 .purchase-bron-dealer{background:rgba(232,60,106,.1);color:var(--red)}
 .pu-total{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--text)}
 .pu-breakdown{font-size:11px;color:var(--text3);margin-top:2px;text-align:right}
+
+/* ─── DOCUMENTEN ─────────────────────────── */
+.doc-item{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s}
+.doc-item:last-child{border-bottom:none}
+.doc-item:hover{background:var(--surface2)}
+.doc-icon{width:36px;height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;background:var(--surface2)}
+.doc-info{flex:1;min-width:0}
+.doc-naam{font-weight:600;font-size:12.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.doc-meta{font-size:11px;color:var(--text3);margin-top:1px;display:flex;gap:6px}
+.doc-actions{display:flex;gap:6px;opacity:0;transition:opacity .15s}
+.doc-item:hover .doc-actions{opacity:1}
+.doc-type-badge{display:inline-flex;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:600;font-family:'DM Mono',monospace;text-transform:uppercase;background:var(--surface2);color:var(--text3)}
 </style>
 </head>
 <body>
@@ -964,6 +976,14 @@ tr:hover td{background:var(--surface2);cursor:pointer}
                 <button class="btn btn-ghost btn-sm" onclick="openTaskModal()" id="d-add-task-btn">+ Taak</button>
               </div>
               <div id="d-tasks-list" style="padding:0 0 4px"></div>
+            </div>
+            <div class="detail-panel">
+              <div class="panel-header">
+                <div class="panel-title">Documenten</div>
+                <button class="btn btn-ghost btn-sm" id="d-upload-doc-btn">+ Document</button>
+              </div>
+              <div id="d-documents-list"></div>
+              <input type="file" id="d-doc-input" style="display:none" multiple>
             </div>
             <div class="detail-panel">
               <div class="panel-header">
@@ -1362,6 +1382,7 @@ let appState = {
   wsFilter: 'Alle',
   purchases: [],
   puFilter: 'Alle',
+  documents: [],
   cars: [],           // live data uit Supabase
   loading: true,
   currentFilter: 'Alle',
@@ -1461,7 +1482,7 @@ async function routeUser(user) {
 async function loadCars() {
   appState.loading = true;
   try {
-    const [carsRes, salesRes, tasksRes, customersRes, contactsRes, tradeInsRes, repairsRes, purchasesRes] = await Promise.all([
+    const [carsRes, salesRes, tasksRes, customersRes, contactsRes, tradeInsRes, repairsRes, purchasesRes, docsRes] = await Promise.all([
       sb.from('cars_with_days')
         .select('*, car_images(url, is_primary, sort_order)')
         .eq('company_id', appState.companyId)
@@ -1493,7 +1514,11 @@ async function loadCars() {
       sb.from('purchases')
         .select('*')
         .eq('company_id', appState.companyId)
-        .order('inkoop_datum', { ascending: false })
+        .order('inkoop_datum', { ascending: false }),
+      sb.from('documents')
+        .select('*')
+        .eq('company_id', appState.companyId)
+        .order('created_at', { ascending: false })
     ]);
 
     if (carsRes.error) throw carsRes.error;
@@ -1505,6 +1530,7 @@ async function loadCars() {
     appState.tradeIns      = tradeInsRes.data     || [];
     appState.repairs       = repairsRes.data      || [];
     appState.purchases     = purchasesRes.data    || [];
+    appState.documents     = docsRes.data         || [];
     updateWorkshopBadge();
     updateTasksBadge();
     appState.loading = false;
@@ -2230,6 +2256,10 @@ function showDetail(id) {
       dRepairTotal.textContent = fmtEur(totalKosten);
     }
   }
+  // Documenten voor deze auto
+  renderDocuments(id);
+  setupDocUpload(id);
+
   // Inkoop voor deze auto
   const carPurchase = (appState.purchases||[]).find(p => p.car_id === id);
   const dPurchaseInfo = el('d-purchase-info');
@@ -2826,6 +2856,174 @@ async function saveSale() {
 
 
 
+
+
+/* ══════════════════════════════════════════
+   DOCUMENTEN
+══════════════════════════════════════════ */
+const DOC_TYPES = ['Kentekenbewijs','Aankoopfactuur','Verkoopfactuur','APK rapport','Inspectierapport','Garantiebewijs','Verzekeringsdocument','Importdocument','Overig'];
+
+function docIcon(mime) {
+  if (!mime) return '📄';
+  if (mime.includes('pdf'))   return '📕';
+  if (mime.includes('image')) return '🖼';
+  if (mime.includes('word') || mime.includes('document')) return '📝';
+  if (mime.includes('sheet') || mime.includes('excel'))   return '📊';
+  if (mime.includes('zip') || mime.includes('rar'))       return '🗜';
+  return '📄';
+}
+
+function formatBytes(bytes) {
+  if (!bytes) return '';
+  if (bytes < 1024)       return bytes + ' B';
+  if (bytes < 1048576)    return Math.round(bytes/1024) + ' KB';
+  return (bytes/1048576).toFixed(1) + ' MB';
+}
+
+function renderDocuments(carId) {
+  const docs = (appState.documents||[]).filter(d => d.car_id === carId);
+  const list = el('d-documents-list');
+  if (!list) return;
+
+  if (!docs.length) {
+    list.innerHTML = '<div style="padding:12px 18px;color:var(--text3);font-size:12px">Geen documenten</div>';
+    return;
+  }
+
+  list.innerHTML = docs.map(function(d) {
+    return '<div class="doc-item">'
+      + '<div class="doc-icon">'+docIcon(d.bestandstype)+'</div>'
+      + '<div class="doc-info">'
+      + '<div class="doc-naam">'+d.naam+'</div>'
+      + '<div class="doc-meta">'
+      + '<span class="doc-type-badge">'+d.type+'</span>'
+      + '<span>'+d.bestandsnaam+'</span>'
+      + (d.bestandsgrootte ? '<span>'+formatBytes(d.bestandsgrootte)+'</span>' : '')
+      + '<span>'+fmtDate(d.created_at)+'</span>'
+      + '</div>'
+      + (d.notes ? '<div style="font-size:11px;color:var(--text2);margin-top:2px">'+d.notes+'</div>' : '')
+      + '</div>'
+      + '<div class="doc-actions">'
+      + '<a href="'+d.url+'" target="_blank" class="btn btn-ghost btn-sm" onclick="event.stopPropagation()">↗ Openen</a>'
+      + '<button class="btn btn-ghost btn-sm" data-did="'+d.id+'" data-path="'+d.storage_path+'" onclick="event.stopPropagation();deleteDocument(this.dataset.did,this.dataset.path)" style="color:var(--red)">🗑</button>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function setupDocUpload(carId) {
+  const btn   = el('d-upload-doc-btn');
+  const input = el('d-doc-input');
+  if (!btn || !input) return;
+
+  btn.onclick = function() { input.click(); };
+  input.onchange = function() {
+    if (input.files.length) openDocModal(carId, Array.from(input.files));
+    input.value = '';
+  };
+}
+
+function openDocModal(carId, files) {
+  appState.pendingDocFiles = files;
+  appState.docCarId        = carId;
+
+  // Build doc type rows
+  const rows = files.map(function(f, i) {
+    return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 0;border-bottom:1px solid var(--border)">'
+      + '<div>'
+      + '<div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:4px">'+docIcon(f.type)+' '+f.name+'</div>'
+      + '<div style="font-size:11px;color:var(--text3)">'+formatBytes(f.size)+'</div>'
+      + '</div>'
+      + '<div style="display:flex;flex-direction:column;gap:6px">'
+      + '<select id="doc-type-'+i+'" style="font-size:12px;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px">'
+      + DOC_TYPES.map(t=>'<option>'+t+'</option>').join('')
+      + '</select>'
+      + '<input type="text" id="doc-naam-'+i+'" placeholder="Naam document" value="'+f.name.replace(/.[^.]+$/,'')+'" style="font-size:12px;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px">'
+      + '<input type="text" id="doc-notes-'+i+'" placeholder="Notitie (optioneel)" style="font-size:12px;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px">'
+      + '</div>'
+      + '</div>';
+  }).join('');
+
+  el('doc-upload-rows').innerHTML = rows;
+  hideEl('doc-upload-err');
+  openModal('doc-upload-modal');
+}
+
+function closeDocModal() { appCloseModal('doc-upload-modal'); appState.pendingDocFiles = []; }
+
+async function saveDocuments() {
+  const files  = appState.pendingDocFiles || [];
+  const carId  = appState.docCarId;
+  if (!files.length || !carId) return;
+
+  const { data: { session } } = await sb.auth.getSession();
+  const token = session?.access_token;
+
+  setBtn('doc-save-btn', true, 'Uploaden…');
+  hideEl('doc-upload-err');
+
+  let uploaded = 0;
+  for (let i = 0; i < files.length; i++) {
+    const file  = files[i];
+    const naam  = el('doc-naam-'+i)?.value.trim() || file.name;
+    const type  = el('doc-type-'+i)?.value || 'Overig';
+    const notes = el('doc-notes-'+i)?.value.trim() || null;
+    const path  = carId + '/' + Date.now() + '_' + i + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+
+    try {
+      // Upload naar Supabase Storage
+      const { data: upData, error: upErr } = await sb.storage
+        .from('car-documents')
+        .upload(path, file, { contentType: file.type, upsert: false });
+
+      if (upErr) throw upErr;
+
+      // Signed URL genereren (7 dagen geldig — wordt bij ophalen vernieuwd)
+      const { data: urlData } = await sb.storage
+        .from('car-documents')
+        .createSignedUrl(path, 60 * 60 * 24 * 365); // 1 jaar
+
+      // Sla op in database
+      const { error: dbErr } = await sb.from('documents').insert({
+        car_id:          carId,
+        company_id:      appState.companyId,
+        naam,
+        type,
+        bestandsnaam:    file.name,
+        bestandstype:    file.type,
+        bestandsgrootte: file.size,
+        storage_path:    path,
+        url:             urlData?.signedUrl || '',
+        notes,
+      });
+
+      if (dbErr) throw dbErr;
+      uploaded++;
+    } catch(e) {
+      showAlert('doc-upload-err', 'Fout bij '+file.name+': '+e.message);
+    }
+  }
+
+  closeDocModal();
+  await loadCars();
+  renderDocuments(carId);
+  if (uploaded > 0) toast('✓ '+uploaded+' document'+(uploaded>1?'en':'')+' geüpload');
+  setBtn('doc-save-btn', false, 'Uploaden');
+}
+
+async function deleteDocument(docId, storagePath) {
+  if (!confirm('Document verwijderen?')) return;
+  try {
+    await sb.storage.from('car-documents').remove([storagePath]);
+    await sb.from('documents').delete().eq('id', docId);
+    await loadCars();
+    const carId = appState.currentCarId;
+    if (carId) renderDocuments(carId);
+    toast('🗑 Document verwijderd','var(--orange)');
+  } catch(e) {
+    toast('Fout: '+e.message,'var(--red)');
+  }
+}
 
 /* ══════════════════════════════════════════
    INKOOPREGISTRATIE
@@ -3833,6 +4031,25 @@ document.addEventListener('keydown', function(e) {
 
 
 
+
+
+  <!-- DOCUMENT UPLOAD MODAL -->
+  <div class="modal-backdrop" id="doc-upload-modal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <div class="modal-title">Documenten uploaden</div>
+        <button class="modal-close" onclick="closeDocModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="doc-upload-rows"></div>
+        <div class="alert alert-err" id="doc-upload-err" style="margin-top:14px"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeDocModal()">Annuleren</button>
+        <button class="btn btn-primary" id="doc-save-btn" onclick="saveDocuments()">↑ Uploaden</button>
+      </div>
+    </div>
+  </div>
 
   <!-- INKOOP MODAL -->
   <div class="modal-backdrop" id="purchase-modal">
