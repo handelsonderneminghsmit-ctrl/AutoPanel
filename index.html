@@ -562,6 +562,38 @@ tr:hover td{background:var(--surface2);cursor:pointer}
   .auth-body,.auth-top,.auth-foot{padding-left:18px;padding-right:18px}
   .field-row{grid-template-columns:1fr}.topbar-right .btn-sm:not(:last-child){display:none}
 }
+
+/* ─── TAKEN ─────────────────────────────── */
+.task-card{background:var(--surface);border:1px solid var(--border);padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:border-color .15s,transform .15s;position:relative}
+.task-card:hover{border-color:var(--border2);transform:translateX(2px)}
+.task-card.prio-urgent{border-left:3px solid var(--red)}
+.task-card.prio-hoog{border-left:3px solid var(--orange)}
+.task-card.prio-normaal{border-left:3px solid var(--accent)}
+.task-card.prio-laag{border-left:3px solid var(--border2)}
+.task-card.status-klaar{opacity:.55}
+.task-header{display:flex;align-items:flex-start;gap:10px;margin-bottom:6px}
+.task-check{width:18px;height:18px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;margin-top:1px}
+.task-check:hover{border-color:var(--accent)}
+.task-check.done{background:var(--green);border-color:var(--green);color:#000;font-size:10px}
+.task-check.busy{background:var(--accent);border-color:var(--accent);color:#000;font-size:10px}
+.task-titel{font-weight:600;font-size:13.5px;color:var(--text);flex:1;line-height:1.3}
+.task-titel.done{text-decoration:line-through;color:var(--text3)}
+.task-meta{display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--text3);margin-left:28px}
+.task-badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:3px;font-size:10px;font-weight:600;font-family:'DM Mono',monospace;text-transform:uppercase}
+.task-badge.prio-urgent{background:rgba(232,60,106,.15);color:var(--red)}
+.task-badge.prio-hoog{background:rgba(240,146,60,.15);color:var(--orange)}
+.task-badge.prio-normaal{background:rgba(232,240,60,.1);color:var(--accent)}
+.task-badge.prio-laag{background:var(--surface2);color:var(--text3)}
+.task-badge.status-open{background:var(--surface2);color:var(--text2)}
+.task-badge.status-bezig{background:rgba(232,240,60,.1);color:var(--accent)}
+.task-badge.status-klaar{background:rgba(60,232,144,.1);color:var(--green)}
+.task-car-link{color:var(--accent);cursor:pointer;font-size:11px}
+.task-car-link:hover{text-decoration:underline}
+.task-deadline-warn{color:var(--red)}
+.task-deadline-ok{color:var(--text3)}
+.task-kosten{color:var(--green);font-weight:600}
+.tasks-group-header{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);padding:8px 0 6px;border-bottom:1px solid var(--border);margin-bottom:8px;margin-top:16px}
+.tasks-group-header:first-child{margin-top:0}
 </style>
 </head>
 <body>
@@ -674,7 +706,8 @@ tr:hover td{background:var(--surface2);cursor:pointer}
       <div class="sb-item active" id="nav-dashboard" onclick="appShowView('dashboard');closeSidebar()"><span class="icon">▣</span>Dashboard</div>
       <div class="sb-item" id="nav-inventory" onclick="appShowView('inventory');closeSidebar()"><span class="icon">◫</span>Voorraad<span class="sb-badge" id="nav-count">—</span></div>
       <div class="sb-section">Analyse</div>
-      <div class="sb-item" id="nav-finance" onclick="appShowView('finance');closeSidebar()"><span class="icon">◈</span>Financieel</div>
+      <div class="sb-item" id="nav-finance" onclick="appShowView('finance');closeSidebar()"><span class="icon">◈</span>Analytics</div>
+      <div class="sb-item" id="nav-tasks" onclick="appShowView('tasks');closeSidebar()"><span class="icon">☑</span>Taken<span class="sb-badge alert" id="tasks-badge" style="display:none">0</span></div>
       <div class="sb-item" id="nav-export" onclick="appShowView('export');closeSidebar()"><span class="icon">↗</span>Advertentie-export</div>
       <div class="sb-item" id="nav-ai" onclick="appShowView('ai');closeSidebar()"><span class="icon">◎</span>AI-assistent<span class="sb-badge" style="background:var(--teal);color:#000">Nieuw</span></div>
       <div class="sb-section">Handel</div>
@@ -869,6 +902,13 @@ tr:hover td{background:var(--surface2);cursor:pointer}
               <div class="panel-header"><div class="panel-title">Geschiedenis</div></div>
               <div class="timeline" id="d-timeline"></div>
             </div>
+            <div class="detail-panel">
+              <div class="panel-header">
+                <div class="panel-title">Taken</div>
+                <button class="btn btn-ghost btn-sm" onclick="openTaskModal()" id="d-add-task-btn">+ Taak</button>
+              </div>
+              <div id="d-tasks-list" style="padding:0 0 4px"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -962,6 +1002,30 @@ tr:hover td{background:var(--surface2);cursor:pointer}
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- TAKEN -->
+      <div class="app-view" id="app-view-tasks">
+        <div class="section-header">
+          <div class="section-title">Taken</div>
+          <button class="btn btn-primary btn-sm" onclick="openTaskModal()">+ Nieuwe taak</button>
+        </div>
+
+        <!-- Filter tabs -->
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+          <div class="filter-chip active" id="task-filter-alle"    onclick="setTaskFilter('alle',this)">Alle</div>
+          <div class="filter-chip" id="task-filter-open"    onclick="setTaskFilter('Open',this)">Open</div>
+          <div class="filter-chip" id="task-filter-bezig"   onclick="setTaskFilter('Bezig',this)">Bezig</div>
+          <div class="filter-chip" id="task-filter-klaar"   onclick="setTaskFilter('Klaar',this)">Klaar</div>
+          <div class="filter-chip" id="task-filter-urgent"  onclick="setTaskFilter('urgent',this)" style="color:var(--red);border-color:rgba(232,60,106,.3)">🔴 Urgent</div>
+          <div class="filter-chip" id="task-filter-deadline" onclick="setTaskFilter('deadline',this)" style="color:var(--orange);border-color:rgba(240,146,60,.3)">⏰ Deadline vandaag</div>
+        </div>
+
+        <!-- KPI strip -->
+        <div class="fin-kpi-strip" id="tasks-kpis" style="margin-bottom:16px"></div>
+
+        <!-- Taken lijst -->
+        <div id="tasks-list"></div>
       </div>
 
       <!-- AI ASSISTENT -->
@@ -1106,6 +1170,8 @@ const UPLOAD_FN_URL = SB_URL + '/functions/v1/upload-photo';
 ══════════════════════════════════════════ */
 let appState = {
   sales: [],
+  tasks: [],
+  taskFilter: 'alle',
   cars: [],           // live data uit Supabase
   loading: true,
   currentFilter: 'Alle',
@@ -1205,7 +1271,7 @@ async function routeUser(user) {
 async function loadCars() {
   appState.loading = true;
   try {
-    const [carsRes, salesRes] = await Promise.all([
+    const [carsRes, salesRes, tasksRes] = await Promise.all([
       sb.from('cars_with_days')
         .select('*, car_images(url, is_primary, sort_order)')
         .eq('company_id', appState.companyId)
@@ -1213,12 +1279,18 @@ async function loadCars() {
       sb.from('sales')
         .select('*')
         .eq('company_id', appState.companyId)
-        .order('verkoop_datum', { ascending: false })
+        .order('verkoop_datum', { ascending: false }),
+      sb.from('tasks')
+        .select('*')
+        .eq('company_id', appState.companyId)
+        .order('created_at', { ascending: false })
     ]);
 
     if (carsRes.error) throw carsRes.error;
     appState.cars  = carsRes.data || [];
     appState.sales = salesRes.data || [];
+    appState.tasks = tasksRes.data || [];
+    updateTasksBadge();
     appState.loading = false;
     updateNavCount();
     return appState.cars;
@@ -1635,7 +1707,7 @@ function switchTab(t) {
 /* ══════════════════════════════════════════
    APP NAVIGATIE
 ══════════════════════════════════════════ */
-const titleMap = {dashboard:'Dashboard',inventory:'Voorraad',detail:'Voertuig details',finance:'Analytics',export:'Advertentie-export',ai:'AI-assistent'};
+const titleMap = {dashboard:'Dashboard',inventory:'Voorraad',detail:'Voertuig details',finance:'Analytics',tasks:'Taken',export:'Advertentie-export',ai:'AI-assistent'};
 
 function appShowView(v) {
   document.querySelectorAll('.app-view').forEach(e=>e.classList.remove('active'));
@@ -1646,6 +1718,7 @@ function appShowView(v) {
   if(v==='dashboard') renderDashboard();
   if(v==='inventory') renderInventory();
   if(v==='finance')   renderFinance();
+  if(v==='tasks')     renderTasks();
   if(v==='export')    renderExport();
   if(v==='ai')        renderAI();
   window.scrollTo(0,0);
@@ -1898,6 +1971,24 @@ function showDetail(id) {
   // Edit/delete knoppen
   el('d-edit-btn').onclick   = () => openCarModal(id);
   el('d-delete-btn').onclick = () => deleteCar(id);
+
+  // Taken voor deze auto
+  const carTasks = (appState.tasks||[]).filter(t => t.car_id === id);
+  const dTasksList = el('d-tasks-list');
+  if (dTasksList) {
+    if (!carTasks.length) {
+      dTasksList.innerHTML = '<div style="padding:12px 18px;color:var(--text3);font-size:12px">Geen taken voor dit voertuig</div>';
+    } else {
+      dTasksList.innerHTML = carTasks
+        .sort((a,b) => { const o={Urgent:0,Hoog:1,Normaal:2,Laag:3}; return (o[a.prioriteit]||2)-(o[b.prioriteit]||2); })
+        .map(function(t) { return renderTaskCard(t); }).join('');
+    }
+  }
+  // Pre-select auto in taakmodal
+  el('d-add-task-btn').onclick = function() {
+    openTaskModal();
+    setTimeout(function() { const s=el('tk-car'); if(s) s.value=id; }, 50);
+  };
   // Verkoop knop: verberg als al verkocht
   const sellBtn = el('d-sell-btn');
   if (sellBtn) {
@@ -2459,6 +2550,187 @@ async function saveSale() {
   }
 }
 
+
+/* ══════════════════════════════════════════
+   TAKENSYSTEEM
+══════════════════════════════════════════ */
+function updateTasksBadge() {
+  const open = (appState.tasks||[]).filter(t => t.status !== 'Klaar').length;
+  const badge = el('tasks-badge');
+  if (!badge) return;
+  badge.textContent = open;
+  badge.style.display = open > 0 ? 'inline-flex' : 'none';
+}
+
+function setTaskFilter(f, el_) {
+  appState.taskFilter = f;
+  document.querySelectorAll('[id^="task-filter-"]').forEach(e => e.classList.remove('active'));
+  if (el_) el_.classList.add('active');
+  renderTasks();
+}
+
+function renderTasks() {
+  const all   = appState.tasks || [];
+  const today = new Date().toISOString().slice(0,10);
+  const f     = appState.taskFilter || 'alle';
+
+  let list = all.filter(function(t) {
+    if (f === 'Open')     return t.status === 'Open';
+    if (f === 'Bezig')    return t.status === 'Bezig';
+    if (f === 'Klaar')    return t.status === 'Klaar';
+    if (f === 'urgent')   return t.prioriteit === 'Urgent' && t.status !== 'Klaar';
+    if (f === 'deadline') return t.deadline === today && t.status !== 'Klaar';
+    return true;
+  });
+
+  // KPI's
+  const open   = all.filter(t=>t.status==='Open').length;
+  const bezig  = all.filter(t=>t.status==='Bezig').length;
+  const urgent = all.filter(t=>t.prioriteit==='Urgent'&&t.status!=='Klaar').length;
+  const totKosten = all.filter(t=>t.status==='Klaar').reduce((s,t)=>s+(t.kosten||0),0);
+  el('tasks-kpis').innerHTML =
+    '<div class="kpi-card blue"  style="animation-delay:.05s"><div class="kpi-label">Open taken</div><div class="kpi-value">'+open+'</div><div class="kpi-sub">te doen</div></div>'
+  + '<div class="kpi-card yellow" style="animation-delay:.10s"><div class="kpi-label">Bezig</div><div class="kpi-value">'+bezig+'</div><div class="kpi-sub">in uitvoering</div></div>'
+  + '<div class="kpi-card red"   style="animation-delay:.15s"><div class="kpi-label">Urgent</div><div class="kpi-value">'+urgent+'</div><div class="kpi-sub">hoge prioriteit</div></div>'
+  + '<div class="kpi-card green" style="animation-delay:.20s"><div class="kpi-label">Kosten klaar</div><div class="kpi-value">€'+Math.round(totKosten).toLocaleString('nl')+'</div><div class="kpi-sub">afgeronde taken</div></div>';
+
+  if (!list.length) {
+    el('tasks-list').innerHTML = '<div style="text-align:center;padding:48px 0;color:var(--text3)"><div style="font-size:36px;margin-bottom:12px">☑</div><div style="font-size:14px">Geen taken gevonden</div></div>';
+    return;
+  }
+
+  // Groepeer op prioriteit
+  const groups = [
+    { key:'Urgent',  label:'🔴 Urgent',  items: list.filter(t=>t.prioriteit==='Urgent') },
+    { key:'Hoog',    label:'🟠 Hoog',    items: list.filter(t=>t.prioriteit==='Hoog') },
+    { key:'Normaal', label:'🟡 Normaal', items: list.filter(t=>t.prioriteit==='Normaal') },
+    { key:'Laag',    label:'⚪ Laag',    items: list.filter(t=>t.prioriteit==='Laag') },
+  ].filter(g => g.items.length > 0);
+
+  el('tasks-list').innerHTML = groups.map(function(g) {
+    return '<div class="tasks-group-header">'+g.label+' ('+g.items.length+')</div>'
+      + g.items.map(function(t) { return renderTaskCard(t); }).join('');
+  }).join('');
+}
+
+function renderTaskCard(t) {
+  const car     = (appState.cars||[]).find(c=>c.id===t.car_id);
+  const today   = new Date().toISOString().slice(0,10);
+  const overdue = t.deadline && t.deadline < today && t.status !== 'Klaar';
+  const dueToday= t.deadline && t.deadline === today && t.status !== 'Klaar';
+  const checkIcon = t.status==='Klaar' ? '✓' : t.status==='Bezig' ? '●' : '';
+  const checkClass = t.status==='Klaar' ? 'done' : t.status==='Bezig' ? 'busy' : '';
+
+  return '<div class="task-card prio-'+t.prioriteit.toLowerCase()+' status-'+t.status.toLowerCase()+'" data-tid="'+t.id+'" onclick="openTaskModal(this.dataset.tid)">'
+    + '<div class="task-header">'
+    + '<div class="task-check '+checkClass+'" data-tid="'+t.id+'" onclick="cycleTaskStatus(event,this.dataset.tid)">'+checkIcon+'</div>'
+    + '<div class="task-titel '+(t.status==='Klaar'?'done':'')+'">'+t.titel+'</div>'
+    + '<span class="task-badge prio-'+t.prioriteit.toLowerCase()+'">'+t.prioriteit+'</span>'
+    + '<span class="task-badge status-'+t.status.toLowerCase()+'">'+t.status+'</span>'
+    + '</div>'
+    + '<div class="task-meta">'
+    + (t.categorie ? '<span>'+t.categorie+'</span>' : '')
+    + (car ? '<span class="task-car-link" data-cid="'+car.id+'" onclick="event.stopPropagation();showDetail(this.dataset.cid)">🚗 '+car.make+' '+car.model+'</span>' : '')
+    + (t.toegewezen_aan ? '<span>👤 '+t.toegewezen_aan+'</span>' : '')
+    + (t.deadline ? '<span class="'+(overdue?'task-deadline-warn':dueToday?'task-deadline-warn':'task-deadline-ok')+'">'+(overdue?'⚠ ':dueToday?'⏰ ':'📅 ')+fmtDate(t.deadline)+'</span>' : '')
+    + (t.kosten ? '<span class="task-kosten">'+fmtEur(t.kosten)+'</span>' : '')
+    + (t.omschrijving ? '<span style="color:var(--text2)">'+t.omschrijving.slice(0,60)+(t.omschrijving.length>60?'…':'')+'</span>' : '')
+    + '</div>'
+    + '</div>';
+}
+
+async function cycleTaskStatus(e, taskId) {
+  e.stopPropagation();
+  const task = (appState.tasks||[]).find(t=>t.id===taskId);
+  if (!task) return;
+  const next = { 'Open':'Bezig', 'Bezig':'Klaar', 'Klaar':'Open' };
+  const newStatus = next[task.status] || 'Open';
+  const { error } = await sb.from('tasks').update({ status: newStatus }).eq('id', taskId);
+  if (error) { toast('Fout: '+error.message,'var(--red)'); return; }
+  task.status = newStatus;
+  updateTasksBadge();
+  renderTasks();
+  toast(newStatus==='Klaar'?'✓ Taak afgerond':newStatus==='Bezig'?'● Taak gestart':'↺ Taak heropend', newStatus==='Klaar'?'var(--green)':'var(--accent)');
+}
+
+function openTaskModal(taskId) {
+  appState.editingTaskId = taskId || null;
+  const task = taskId ? (appState.tasks||[]).find(t=>t.id===taskId) : null;
+
+  el('task-modal-title').textContent = task ? 'Taak bewerken' : 'Nieuwe taak';
+  el('tk-titel').value         = task?.titel         || '';
+  el('tk-omschrijving').value  = task?.omschrijving  || '';
+  el('tk-categorie').value     = task?.categorie     || 'Algemeen';
+  el('tk-prioriteit').value    = task?.prioriteit    || 'Normaal';
+  el('tk-status').value        = task?.status        || 'Open';
+  el('tk-deadline').value      = task?.deadline      || '';
+  el('tk-toegewezen').value    = task?.toegewezen_aan|| '';
+  el('tk-kosten').value        = task?.kosten        || '';
+  el('tk-notes').value         = task?.notes         || '';
+
+  // Auto koppeling
+  const carSelect = el('tk-car');
+  const avail = appState.cars.filter(c=>c.status!=='Verkocht');
+  carSelect.innerHTML = '<option value="">— Niet gekoppeld aan auto —</option>'
+    + avail.map(c=>'<option value="'+c.id+'"'+(task?.car_id===c.id?' selected':'')+'>'+c.make+' '+c.model+(c.kenteken?' ('+c.kenteken+')':'')+'</option>').join('');
+
+  // Verwijder knop
+  el('tk-delete-btn').style.display = task ? 'block' : 'none';
+  hideEl('tk-err');
+  openModal('task-modal');
+}
+
+function closeTaskModal() { appCloseModal('task-modal'); appState.editingTaskId = null; }
+
+async function saveTask() {
+  hideEl('tk-err');
+  const titel = el('tk-titel').value.trim();
+  if (!titel) { showAlert('tk-err','Voer een taaknaam in.'); return; }
+
+  const payload = {
+    company_id:     appState.companyId,
+    car_id:         el('tk-car').value || null,
+    titel,
+    omschrijving:   el('tk-omschrijving').value.trim() || null,
+    categorie:      el('tk-categorie').value,
+    prioriteit:     el('tk-prioriteit').value,
+    status:         el('tk-status').value,
+    deadline:       el('tk-deadline').value || null,
+    toegewezen_aan: el('tk-toegewezen').value.trim() || null,
+    kosten:         parseFloat(el('tk-kosten').value) || null,
+    notes:          el('tk-notes').value.trim() || null,
+  };
+
+  setBtn('tk-save-btn', true, 'Opslaan…');
+  try {
+    let error;
+    if (appState.editingTaskId) {
+      ({ error } = await sb.from('tasks').update(payload).eq('id', appState.editingTaskId));
+    } else {
+      ({ error } = await sb.from('tasks').insert(payload));
+    }
+    if (error) throw error;
+    closeTaskModal();
+    await loadCars();
+    renderTasks();
+    toast(appState.editingTaskId ? '✓ Taak bijgewerkt' : '✓ Taak aangemaakt');
+  } catch(e) {
+    showAlert('tk-err', 'Fout: '+e.message);
+  } finally {
+    setBtn('tk-save-btn', false, 'Opslaan');
+  }
+}
+
+async function deleteTask() {
+  if (!appState.editingTaskId) return;
+  const { error } = await sb.from('tasks').delete().eq('id', appState.editingTaskId);
+  if (error) { toast('Fout: '+error.message,'var(--red)'); return; }
+  closeTaskModal();
+  await loadCars();
+  renderTasks();
+  toast('🗑 Taak verwijderd','var(--orange)');
+}
+
 /* ══════════════════════════════════════════
    LIGHTBOX
 ══════════════════════════════════════════ */
@@ -2522,6 +2794,53 @@ document.addEventListener('keydown', function(e) {
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="closeSaleModal()">Annuleren</button>
         <button class="btn btn-primary" id="sl-save-btn" onclick="saveSale()">💶 Verkoop opslaan</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- TAAK MODAL -->
+  <div class="modal-backdrop" id="task-modal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <div class="modal-title" id="task-modal-title">Nieuwe taak</div>
+        <button class="modal-close" onclick="closeTaskModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid" style="gap:14px">
+          <div class="form-group" style="grid-column:1/-1"><label>Taaknaam *</label><input type="text" id="tk-titel" placeholder="bijv. APK keuring inplannen"></div>
+          <div class="form-group"><label>Categorie</label>
+            <select id="tk-categorie">
+              <option>Algemeen</option><option>APK</option><option>Schade</option>
+              <option>Reiniging</option><option>Mechanisch</option><option>Administratief</option><option>Inkoop</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Prioriteit</label>
+            <select id="tk-prioriteit">
+              <option value="Laag">Laag</option><option value="Normaal" selected>Normaal</option>
+              <option value="Hoog">Hoog</option><option value="Urgent">Urgent</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Status</label>
+            <select id="tk-status">
+              <option value="Open">Open</option><option value="Bezig">Bezig</option><option value="Klaar">Klaar</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Deadline</label><input type="date" id="tk-deadline"></div>
+          <div class="form-group" style="grid-column:1/-1"><label>Koppel aan auto</label><select id="tk-car"></select></div>
+          <div class="form-group"><label>Toegewezen aan</label><input type="text" id="tk-toegewezen" placeholder="Naam medewerker"></div>
+          <div class="form-group"><label>Kosten (€)</label><input type="number" id="tk-kosten" placeholder="0.00" min="0" step="0.01"></div>
+          <div class="form-group" style="grid-column:1/-1"><label>Omschrijving</label><textarea id="tk-omschrijving" rows="2" placeholder="Beschrijving van de taak…" style="resize:vertical"></textarea></div>
+          <div class="form-group" style="grid-column:1/-1"><label>Notities</label><textarea id="tk-notes" rows="2" placeholder="Interne notities…" style="resize:vertical"></textarea></div>
+        </div>
+        <div class="alert alert-err" id="tk-err" style="margin-top:14px"></div>
+      </div>
+      <div class="modal-footer" style="justify-content:space-between">
+        <button class="btn btn-danger btn-sm" id="tk-delete-btn" onclick="deleteTask()" style="display:none">🗑 Verwijderen</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" onclick="closeTaskModal()">Annuleren</button>
+          <button class="btn btn-primary" id="tk-save-btn" onclick="saveTask()">Opslaan</button>
+        </div>
       </div>
     </div>
   </div>
