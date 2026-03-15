@@ -659,6 +659,17 @@ tr:hover td{background:var(--surface2);cursor:pointer}
 .doc-actions{display:flex;gap:6px;opacity:0;transition:opacity .15s}
 .doc-item:hover .doc-actions{opacity:1}
 .doc-type-badge{display:inline-flex;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:600;font-family:'DM Mono',monospace;text-transform:uppercase;background:var(--surface2);color:var(--text3)}
+
+/* ─── NOTIFICATIES ────────────────────────── */
+.notif-item{padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;display:flex;gap:10px;align-items:flex-start}
+.notif-item:hover{background:var(--surface2)}
+.notif-item.unread{background:var(--accent-dim)}
+.notif-item.unread:hover{background:var(--accent-dim)}
+.notif-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.notif-body{flex:1;min-width:0}
+.notif-title{font-size:12.5px;font-weight:600;color:var(--text);line-height:1.3}
+.notif-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.notif-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:5px}
 </style>
 </head>
 <body>
@@ -784,7 +795,7 @@ tr:hover td{background:var(--surface2);cursor:pointer}
       <div class="sb-item" onclick="openRdw();closeSidebar()"><span class="icon">◉</span>RDW Check</div>
       <div class="sb-section">Beheer</div>
       <div class="sb-item" onclick="closeSidebar()"><span class="icon">≡</span>Rapporten</div>
-      <div class="sb-item" onclick="closeSidebar()"><span class="icon">⚙</span>Instellingen</div>
+      <div class="sb-item" id="nav-settings" onclick="appShowView('settings');closeSidebar()"><span class="icon">⚙</span>Instellingen</div>
     </nav>
     <div class="sb-footer">
       <div class="user-chip">
@@ -807,6 +818,10 @@ tr:hover td{background:var(--surface2);cursor:pointer}
           <button class="theme-btn active" title="Dark" onclick="setTheme('dark',this)">●</button>
           <button class="theme-btn" title="Light" onclick="setTheme('light',this)">○</button>
           <button class="theme-btn" title="Blue" onclick="setTheme('blue',this)">◈</button>
+        </div>
+        <div style="position:relative;display:inline-block">
+          <button class="btn btn-ghost btn-sm" id="notif-bell-btn" onclick="toggleNotifPanel()" style="font-size:16px;padding:5px 10px">🔔</button>
+          <span id="notif-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace"></span>
         </div>
         <button class="btn btn-ai btn-sm" onclick="appShowView('ai')">✦ AI</button>
         <button class="btn btn-primary btn-sm" onclick="openCarModal()">+ Toevoegen</button>
@@ -1229,6 +1244,84 @@ tr:hover td{background:var(--surface2);cursor:pointer}
         <div id="tasks-list"></div>
       </div>
 
+      <!-- INSTELLINGEN -->
+      <div class="app-view" id="app-view-settings">
+        <div class="section-header"><div class="section-title">Instellingen</div></div>
+        <div style="max-width:600px">
+          <div class="panel" style="margin-bottom:16px">
+            <div class="panel-header"><div class="panel-title">Notificatie-instellingen</div></div>
+            <div class="panel-body" style="display:flex;flex-direction:column;gap:14px">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div><div style="font-size:13px;font-weight:600;color:var(--text)">Auto te lang in stock</div><div style="font-size:11px;color:var(--text3)">Waarschuwing als auto langer dan drempel in stock staat</div></div>
+                <input type="checkbox" id="ns-stock" style="width:16px;height:16px" onchange="saveNotifSettings()">
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding-left:16px">
+                <div style="font-size:12px;color:var(--text2)">Drempel (dagen)</div>
+                <select id="ns-stock-days" onchange="saveNotifSettings()" style="font-size:12px;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px">
+                  <option value="30">30 dagen</option><option value="45">45 dagen</option>
+                  <option value="60" selected>60 dagen</option><option value="90">90 dagen</option>
+                </select>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div><div style="font-size:13px;font-weight:600;color:var(--text)">Taak deadline</div><div style="font-size:11px;color:var(--text3)">Waarschuwing als taakdeadline nadert of verlopen is</div></div>
+                <input type="checkbox" id="ns-tasks" style="width:16px;height:16px" onchange="saveNotifSettings()">
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding-left:16px">
+                <div style="font-size:12px;color:var(--text2)">Hoeveel dagen van tevoren</div>
+                <select id="ns-tasks-days" onchange="saveNotifSettings()" style="font-size:12px;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px">
+                  <option value="1">1 dag</option><option value="2">2 dagen</option>
+                  <option value="3" selected>3 dagen</option><option value="7">7 dagen</option>
+                </select>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div><div style="font-size:13px;font-weight:600;color:var(--text)">APK vervaldatum nadert</div><div style="font-size:11px;color:var(--text3)">Waarschuwing als APK binnen drempel verloopt (via RDW)</div></div>
+                <input type="checkbox" id="ns-apk" style="width:16px;height:16px" onchange="saveNotifSettings()">
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding-left:16px">
+                <div style="font-size:12px;color:var(--text2)">Hoeveel dagen van tevoren</div>
+                <select id="ns-apk-days" onchange="saveNotifSettings()" style="font-size:12px;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px">
+                  <option value="14">14 dagen</option><option value="30" selected>30 dagen</option>
+                  <option value="60">60 dagen</option>
+                </select>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div><div style="font-size:13px;font-weight:600;color:var(--text)">Werkplaats wacht op onderdelen</div><div style="font-size:11px;color:var(--text3)">Waarschuwing als opdracht lang wacht op onderdelen</div></div>
+                <input type="checkbox" id="ns-workshop" style="width:16px;height:16px" onchange="saveNotifSettings()">
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding-left:16px">
+                <div style="font-size:12px;color:var(--text2)">Drempel (dagen)</div>
+                <select id="ns-workshop-days" onchange="saveNotifSettings()" style="font-size:12px;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px">
+                  <option value="3">3 dagen</option><option value="5">5 dagen</option>
+                  <option value="7" selected>7 dagen</option><option value="14">14 dagen</option>
+                </select>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div><div style="font-size:13px;font-weight:600;color:var(--text)">Klant lang niet gecontacteerd</div><div style="font-size:11px;color:var(--text3)">Actieve klanten die lang geen contactmoment hebben gehad</div></div>
+                <input type="checkbox" id="ns-crm" style="width:16px;height:16px" onchange="saveNotifSettings()">
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding-left:16px">
+                <div style="font-size:12px;color:var(--text2)">Drempel (dagen)</div>
+                <select id="ns-crm-days" onchange="saveNotifSettings()" style="font-size:12px;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px">
+                  <option value="30">30 dagen</option><option value="60" selected>60 dagen</option>
+                  <option value="90">90 dagen</option>
+                </select>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div><div style="font-size:13px;font-weight:600;color:var(--text)">Verkochte auto niet afgeleverd</div><div style="font-size:11px;color:var(--text3)">Auto staat op Verkocht maar nog in stock</div></div>
+                <input type="checkbox" id="ns-delivery" style="width:16px;height:16px" onchange="saveNotifSettings()">
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding-left:16px">
+                <div style="font-size:12px;color:var(--text2)">Drempel na verkoop (dagen)</div>
+                <select id="ns-delivery-days" onchange="saveNotifSettings()" style="font-size:12px;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px">
+                  <option value="3">3 dagen</option><option value="5">5 dagen</option>
+                  <option value="7" selected>7 dagen</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- AI ASSISTENT -->
       <div class="app-view" id="app-view-ai">
         <div class="section-header">
@@ -1383,6 +1476,8 @@ let appState = {
   purchases: [],
   puFilter: 'Alle',
   documents: [],
+  notifications: [],
+  notifSettings: {},
   cars: [],           // live data uit Supabase
   loading: true,
   currentFilter: 'Alle',
@@ -1531,6 +1626,8 @@ async function loadCars() {
     appState.repairs       = repairsRes.data      || [];
     appState.purchases     = purchasesRes.data    || [];
     appState.documents     = docsRes.data         || [];
+    appState.notifSettings = loadNotifSettings();
+    computeNotifications();
     updateWorkshopBadge();
     updateTasksBadge();
     appState.loading = false;
@@ -1964,6 +2061,7 @@ function appShowView(v) {
   if(v==='crm')       renderCRM();
   if(v==='workshop')  renderWorkshop();
   if(v==='purchases') renderPurchases();
+  if(v==='settings')  renderSettings();
   if(v==='export')    renderExport();
   if(v==='ai')        renderAI();
   window.scrollTo(0,0);
@@ -2857,6 +2955,200 @@ async function saveSale() {
 
 
 
+
+
+/* ══════════════════════════════════════════
+   NOTIFICATIES & INSTELLINGEN
+══════════════════════════════════════════ */
+const NOTIF_SETTINGS_KEY = 'autopanel_notif_settings';
+
+function loadNotifSettings() {
+  try {
+    const stored = localStorage.getItem(NOTIF_SETTINGS_KEY);
+    return stored ? JSON.parse(stored) : {
+      stock: true,     stockDays: 60,
+      tasks: true,     tasksDays: 3,
+      apk: true,       apkDays: 30,
+      workshop: true,  workshopDays: 7,
+      crm: false,      crmDays: 60,
+      delivery: true,  deliveryDays: 7,
+    };
+  } catch(e) { return {}; }
+}
+
+function saveNotifSettings() {
+  const s = {
+    stock:        el('ns-stock')?.checked         ?? true,
+    stockDays:    parseInt(el('ns-stock-days')?.value)   || 60,
+    tasks:        el('ns-tasks')?.checked         ?? true,
+    tasksDays:    parseInt(el('ns-tasks-days')?.value)   || 3,
+    apk:          el('ns-apk')?.checked           ?? true,
+    apkDays:      parseInt(el('ns-apk-days')?.value)     || 30,
+    workshop:     el('ns-workshop')?.checked      ?? true,
+    workshopDays: parseInt(el('ns-workshop-days')?.value)|| 7,
+    crm:          el('ns-crm')?.checked           ?? false,
+    crmDays:      parseInt(el('ns-crm-days')?.value)     || 60,
+    delivery:     el('ns-delivery')?.checked      ?? true,
+    deliveryDays: parseInt(el('ns-delivery-days')?.value)|| 7,
+  };
+  try { localStorage.setItem(NOTIF_SETTINGS_KEY, JSON.stringify(s)); } catch(e) {}
+  appState.notifSettings = s;
+  computeNotifications();
+  toast('✓ Instellingen opgeslagen');
+}
+
+function renderSettings() {
+  const s = loadNotifSettings();
+  appState.notifSettings = s;
+  const set = (id, val) => { const e = el(id); if(e) { if(e.type==='checkbox') e.checked=!!val; else e.value=val; } };
+  set('ns-stock', s.stock);           set('ns-stock-days', s.stockDays||60);
+  set('ns-tasks', s.tasks);           set('ns-tasks-days', s.tasksDays||3);
+  set('ns-apk',   s.apk);             set('ns-apk-days',   s.apkDays||30);
+  set('ns-workshop', s.workshop);     set('ns-workshop-days', s.workshopDays||7);
+  set('ns-crm',   s.crm);             set('ns-crm-days',   s.crmDays||60);
+  set('ns-delivery', s.delivery);     set('ns-delivery-days', s.deliveryDays||7);
+}
+
+function computeNotifications() {
+  const s     = appState.notifSettings || loadNotifSettings();
+  const today = new Date();
+  const notifs= [];
+
+  function daysDiff(dateStr) {
+    if (!dateStr) return null;
+    return Math.round((new Date(dateStr) - today) / 86400000);
+  }
+
+  function daysAgo(dateStr) {
+    if (!dateStr) return null;
+    return Math.round((today - new Date(dateStr)) / 86400000);
+  }
+
+  // ─ Stock te lang ─
+  if (s.stock) {
+    (appState.cars||[]).filter(c=>c.status==='Beschikbaar').forEach(function(c) {
+      const d = c.days_in_stock || 0;
+      if (d >= (s.stockDays||60)) {
+        notifs.push({ id:'stock-'+c.id, type:'stock', icon:'⏰', title: c.make+' '+c.model+' staat '+d+' dagen in stock', sub: 'Drempel: '+(s.stockDays||60)+' dagen', carId: c.id, severity: d > (s.stockDays||60)*1.5 ? 'high':'medium' });
+      }
+    });
+  }
+
+  // ─ Taak deadlines ─
+  if (s.tasks) {
+    const warn = s.tasksDays || 3;
+    (appState.tasks||[]).filter(t=>t.status!=='Klaar'&&t.deadline).forEach(function(t) {
+      const diff = daysDiff(t.deadline);
+      if (diff !== null && diff <= warn) {
+        const overdue = diff < 0;
+        notifs.push({ id:'task-'+t.id, type:'task', icon: overdue?'🚨':'⚠', title: overdue ? 'Taak verlopen: '+t.titel : 'Taak deadline nadert: '+t.titel, sub: overdue ? Math.abs(diff)+' dagen verlopen' : 'Deadline over '+diff+' dag'+(diff===1?'':'en'), severity: overdue?'high':'medium' });
+      }
+    });
+  }
+
+  // ─ Werkplaats wacht op onderdelen ─
+  if (s.workshop) {
+    const warn = s.workshopDays || 7;
+    (appState.repairs||[]).filter(r=>r.status==='Wacht op onderdelen').forEach(function(r) {
+      const ago = daysAgo(r.updated_at||r.created_at);
+      if (ago !== null && ago >= warn) {
+        const car = (appState.cars||[]).find(c=>c.id===r.car_id);
+        notifs.push({ id:'ws-'+r.id, type:'workshop', icon:'🔧', title: 'Wacht al '+ago+' dagen op onderdelen: '+r.titel, sub: car ? car.make+' '+car.model : '', severity: ago > warn*2 ? 'high':'medium' });
+      }
+    });
+  }
+
+  // ─ CRM: klant lang niet gecontacteerd ─
+  if (s.crm) {
+    const warn = s.crmDays || 60;
+    (appState.customers||[]).filter(c=>c.status==='Actief').forEach(function(c) {
+      const contacts  = (appState.contactMoments||[]).filter(m=>m.customer_id===c.id);
+      const lastDate  = contacts.length ? contacts[0].datum : c.created_at;
+      const ago       = daysAgo(lastDate);
+      if (ago !== null && ago >= warn) {
+        notifs.push({ id:'crm-'+c.id, type:'crm', icon:'👤', title: c.voornaam+' '+c.achternaam+' al '+ago+' dagen niet gecontacteerd', sub: 'Laatste contact: '+fmtDate(lastDate), severity:'low' });
+      }
+    });
+  }
+
+  // ─ Verkocht maar niet afgeleverd ─
+  if (s.delivery) {
+    const warn = s.deliveryDays || 7;
+    (appState.cars||[]).filter(c=>c.status==='Verkocht').forEach(function(c) {
+      const sale = (appState.sales||[]).find(s=>s.car_id===c.id);
+      if (!sale) return;
+      const ago = daysAgo(sale.verkoop_datum);
+      if (ago !== null && ago >= warn) {
+        notifs.push({ id:'del-'+c.id, type:'delivery', icon:'🚗', title: c.make+' '+c.model+' verkocht maar nog niet afgeleverd', sub: 'Verkocht '+ago+' dagen geleden', carId: c.id, severity: ago > warn*2 ? 'high':'medium' });
+      }
+    });
+  }
+
+  appState.notifications = notifs;
+  updateNotifBadge();
+  return notifs;
+}
+
+function updateNotifBadge() {
+  const n     = (appState.notifications||[]).length;
+  const badge = el('notif-badge');
+  if (!badge) return;
+  badge.textContent = n > 99 ? '99+' : n;
+  badge.style.display = n > 0 ? 'flex' : 'none';
+}
+
+let notifPanelOpen = false;
+function toggleNotifPanel() {
+  const panel = el('notif-panel');
+  if (!panel) return;
+  notifPanelOpen = !notifPanelOpen;
+  panel.style.display = notifPanelOpen ? 'flex' : 'none';
+  if (notifPanelOpen) renderNotifPanel();
+}
+
+function renderNotifPanel() {
+  const notifs = appState.notifications || [];
+  const list   = el('notif-list');
+  if (!list) return;
+
+  if (!notifs.length) {
+    list.innerHTML = '<div style="padding:32px 16px;text-align:center;color:var(--text3)"><div style="font-size:32px;margin-bottom:8px">✓</div><div>Geen notificaties</div></div>';
+    return;
+  }
+
+  const icons = { high:'var(--red)', medium:'var(--orange)', low:'var(--text3)' };
+  list.innerHTML = notifs.map(function(n) {
+    return '<div class="notif-item" data-cid="'+(n.carId||'')+'" onclick="notifClick(this.dataset.cid)">'
+      + '<div class="notif-icon">'+n.icon+'</div>'
+      + '<div class="notif-body">'
+      + '<div class="notif-title" style="color:'+(icons[n.severity]||'var(--text)')+'">'+n.title+'</div>'
+      + (n.sub ? '<div class="notif-sub">'+n.sub+'</div>' : '')
+      + '</div>'
+      + '<div class="notif-dot" style="background:'+(icons[n.severity]||'var(--accent)')+'"></div>'
+      + '</div>';
+  }).join('');
+}
+
+function notifClick(carId) {
+  toggleNotifPanel();
+  if (carId) showDetail(carId);
+}
+
+function markAllNotifRead() {
+  appState.notifications = [];
+  updateNotifBadge();
+  renderNotifPanel();
+}
+
+// Sluit paneel als je erbuiten klikt
+document.addEventListener('click', function(e) {
+  const panel = el('notif-panel');
+  const btn   = el('notif-bell-btn');
+  if (notifPanelOpen && panel && !panel.contains(e.target) && !btn.contains(e.target)) {
+    notifPanelOpen = false;
+    panel.style.display = 'none';
+  }
+});
 
 /* ══════════════════════════════════════════
    DOCUMENTEN
@@ -4295,6 +4587,19 @@ document.addEventListener('keydown', function(e) {
           <button class="btn btn-primary" id="tk-save-btn" onclick="saveTask()">Opslaan</button>
         </div>
       </div>
+    </div>
+  </div>
+
+
+  <!-- NOTIFICATIE PANEEL -->
+  <div id="notif-panel" style="display:none;position:fixed;top:52px;right:16px;width:360px;max-height:500px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow);z-index:500;overflow:hidden;display:none;flex-direction:column">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">Notificaties</div>
+      <button class="btn btn-ghost btn-sm" onclick="appShowView('settings');toggleNotifPanel()">⚙ Instellingen</button>
+    </div>
+    <div id="notif-list" style="overflow-y:auto;flex:1;max-height:400px"></div>
+    <div style="padding:10px 16px;border-top:1px solid var(--border)">
+      <button class="btn btn-ghost btn-sm btn-full" onclick="markAllNotifRead()">✓ Alles gelezen</button>
     </div>
   </div>
 
