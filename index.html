@@ -616,6 +616,26 @@ tr:hover td{background:var(--surface2);cursor:pointer}
 .cd-row:last-child{border-bottom:none}
 .cd-key{color:var(--text3);font-size:11px;font-family:'DM Mono',monospace;text-transform:uppercase;min-width:110px;flex-shrink:0;padding-top:1px}
 .cd-val{color:var(--text);flex:1}
+
+/* ─── WERKPLAATS ──────────────────────────── */
+.repair-card{background:var(--surface);border:1px solid var(--border);padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:border-color .15s,transform .15s}
+.repair-card:hover{border-color:var(--border2);transform:translateX(2px)}
+.repair-card.status-aangemeld{border-left:3px solid var(--text3)}
+.repair-card.status-in-behandeling{border-left:3px solid var(--accent)}
+.repair-card.status-wacht{border-left:3px solid var(--orange)}
+.repair-card.status-klaar{border-left:3px solid var(--green);opacity:.7}
+.repair-header{display:flex;align-items:flex-start;gap:10px;margin-bottom:6px}
+.repair-titel{font-weight:600;font-size:13.5px;color:var(--text);flex:1}
+.repair-meta{display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--text3)}
+.repair-kosten{font-weight:700;font-size:14px;color:var(--text);font-family:'Syne',sans-serif}
+.ws-status-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;font-family:'DM Mono',monospace;text-transform:uppercase}
+.ws-status-aangemeld{background:var(--surface2);color:var(--text2)}
+.ws-status-in-behandeling{background:rgba(232,240,60,.1);color:var(--accent)}
+.ws-status-wacht{background:rgba(240,146,60,.15);color:var(--orange)}
+.ws-status-klaar{background:rgba(60,232,144,.1);color:var(--green)}
+.repair-fotos{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.repair-foto{width:60px;height:45px;border-radius:4px;overflow:hidden;border:1px solid var(--border);cursor:zoom-in}
+.repair-foto img{width:100%;height:100%;object-fit:cover}
 </style>
 </head>
 <body>
@@ -731,6 +751,7 @@ tr:hover td{background:var(--surface2);cursor:pointer}
       <div class="sb-item" id="nav-finance" onclick="appShowView('finance');closeSidebar()"><span class="icon">◈</span>Analytics</div>
       <div class="sb-item" id="nav-tasks" onclick="appShowView('tasks');closeSidebar()"><span class="icon">☑</span>Taken<span class="sb-badge alert" id="tasks-badge" style="display:none">0</span></div>
       <div class="sb-item" id="nav-crm" onclick="appShowView('crm');closeSidebar()"><span class="icon">👥</span>Klanten<span class="sb-badge" id="crm-badge" style="display:none">0</span></div>
+      <div class="sb-item" id="nav-workshop" onclick="appShowView('workshop');closeSidebar()"><span class="icon">🔧</span>Werkplaats<span class="sb-badge alert" id="workshop-badge" style="display:none">0</span></div>
       <div class="sb-item" id="nav-export" onclick="appShowView('export');closeSidebar()"><span class="icon">↗</span>Advertentie-export</div>
       <div class="sb-item" id="nav-ai" onclick="appShowView('ai');closeSidebar()"><span class="icon">◎</span>AI-assistent<span class="sb-badge" style="background:var(--teal);color:#000">Nieuw</span></div>
       <div class="sb-section">Handel</div>
@@ -932,6 +953,17 @@ tr:hover td{background:var(--surface2);cursor:pointer}
               </div>
               <div id="d-tasks-list" style="padding:0 0 4px"></div>
             </div>
+            <div class="detail-panel">
+              <div class="panel-header">
+                <div class="panel-title">Werkplaats</div>
+                <button class="btn btn-ghost btn-sm" id="d-add-repair-btn">+ Opdracht</button>
+              </div>
+              <div id="d-repairs-list" style="padding:0 0 4px"></div>
+              <div style="padding:10px 16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:12px">
+                <span style="color:var(--text3)">Totale reparatiekosten</span>
+                <span style="font-weight:700;color:var(--text)" id="d-repair-total">€0</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1025,6 +1057,27 @@ tr:hover td{background:var(--surface2);cursor:pointer}
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- WERKPLAATS -->
+      <div class="app-view" id="app-view-workshop">
+        <div class="section-header">
+          <div class="section-title">Werkplaats</div>
+          <button class="btn btn-primary btn-sm" onclick="openRepairModal()">+ Nieuwe opdracht</button>
+        </div>
+        <div class="fin-kpi-strip" id="workshop-kpis" style="margin-bottom:14px"></div>
+        <div class="inventory-toolbar" style="margin-bottom:12px">
+          <div class="search-box"><span style="color:var(--text3);font-size:13px">⌕</span><input type="text" id="ws-search" placeholder="Zoek voertuig, monteur, opdracht…" oninput="renderWorkshop()"></div>
+          <div class="filter-chips">
+            <div class="filter-chip active" onclick="setWSFilter('Alle',this)">Alle</div>
+            <div class="filter-chip" onclick="setWSFilter('Aangemeld',this)">Aangemeld</div>
+            <div class="filter-chip" onclick="setWSFilter('In behandeling',this)">In behandeling</div>
+            <div class="filter-chip" onclick="setWSFilter('Wacht op onderdelen',this)">Wacht op onderdelen</div>
+            <div class="filter-chip" onclick="setWSFilter('Klaar',this)">Klaar</div>
+          </div>
+          <span class="inventory-count" id="ws-count"></span>
+        </div>
+        <div id="workshop-list"></div>
       </div>
 
       <!-- CRM -->
@@ -1264,6 +1317,8 @@ let appState = {
   tradeIns: [],
   crmFilter: 'Alle',
   currentCustomerId: null,
+  repairs: [],
+  wsFilter: 'Alle',
   cars: [],           // live data uit Supabase
   loading: true,
   currentFilter: 'Alle',
@@ -1363,7 +1418,7 @@ async function routeUser(user) {
 async function loadCars() {
   appState.loading = true;
   try {
-    const [carsRes, salesRes, tasksRes, customersRes, contactsRes, tradeInsRes] = await Promise.all([
+    const [carsRes, salesRes, tasksRes, customersRes, contactsRes, tradeInsRes, repairsRes] = await Promise.all([
       sb.from('cars_with_days')
         .select('*, car_images(url, is_primary, sort_order)')
         .eq('company_id', appState.companyId)
@@ -1387,7 +1442,11 @@ async function loadCars() {
       sb.from('trade_ins')
         .select('*')
         .eq('company_id', appState.companyId)
-        .order('datum', { ascending: false })
+        .order('datum', { ascending: false }),
+      sb.from('repairs')
+        .select('*')
+        .eq('company_id', appState.companyId)
+        .order('created_at', { ascending: false })
     ]);
 
     if (carsRes.error) throw carsRes.error;
@@ -1397,6 +1456,8 @@ async function loadCars() {
     appState.customers     = customersRes.data    || [];
     appState.contactMoments= contactsRes.data     || [];
     appState.tradeIns      = tradeInsRes.data     || [];
+    appState.repairs       = repairsRes.data      || [];
+    updateWorkshopBadge();
     updateTasksBadge();
     appState.loading = false;
     updateNavCount();
@@ -1814,7 +1875,7 @@ function switchTab(t) {
 /* ══════════════════════════════════════════
    APP NAVIGATIE
 ══════════════════════════════════════════ */
-const titleMap = {dashboard:'Dashboard',inventory:'Voorraad',detail:'Voertuig details',finance:'Analytics',tasks:'Taken',crm:'Klantenbeheer','crm-detail':'Klant details',export:'Advertentie-export',ai:'AI-assistent'};
+const titleMap = {dashboard:'Dashboard',inventory:'Voorraad',detail:'Voertuig details',finance:'Analytics',tasks:'Taken',crm:'Klantenbeheer','crm-detail':'Klant details',workshop:'Werkplaats',export:'Advertentie-export',ai:'AI-assistent'};
 
 function appShowView(v) {
   document.querySelectorAll('.app-view').forEach(e=>e.classList.remove('active'));
@@ -1827,6 +1888,7 @@ function appShowView(v) {
   if(v==='finance')   renderFinance();
   if(v==='tasks')     renderTasks();
   if(v==='crm')       renderCRM();
+  if(v==='workshop')  renderWorkshop();
   if(v==='export')    renderExport();
   if(v==='ai')        renderAI();
   window.scrollTo(0,0);
@@ -2096,6 +2158,32 @@ function showDetail(id) {
   el('d-add-task-btn').onclick = function() {
     openTaskModal();
     setTimeout(function() { const s=el('tk-car'); if(s) s.value=id; }, 50);
+  };
+
+  // Werkplaats voor deze auto
+  const carRepairs = (appState.repairs||[]).filter(r => r.car_id === id);
+  const dRepairsList = el('d-repairs-list');
+  const dRepairTotal = el('d-repair-total');
+  if (dRepairsList) {
+    if (!carRepairs.length) {
+      dRepairsList.innerHTML = '<div style="padding:12px 18px;color:var(--text3);font-size:12px">Geen werkplaatsopdrachten</div>';
+    } else {
+      dRepairsList.innerHTML = carRepairs.map(function(r) {
+        const total = (r.kosten_onderdelen||0)+(r.kosten_arbeid||0);
+        return '<div class="tl-item" data-rid="'+r.id+'" onclick="openRepairModal(this.dataset.rid)" style="cursor:pointer">'
+          +'<div class="tl-dot '+(r.status==='Klaar'?'green':r.status==='In behandeling'?'yellow':'gray')+'"></div>'
+          +'<div class="tl-body"><div class="tl-title">'+r.titel+'</div>'
+          +'<div class="tl-meta">'+wsStatusBadge(r.status)+(total?' · '+fmtEur(total):'')+(r.monteur?' · '+r.monteur:'')+'</div></div></div>';
+      }).join('');
+    }
+    if (dRepairTotal) {
+      const totalKosten = carRepairs.reduce((s,r)=>s+(r.kosten_onderdelen||0)+(r.kosten_arbeid||0),0);
+      dRepairTotal.textContent = fmtEur(totalKosten);
+    }
+  }
+  el('d-add-repair-btn').onclick = function() {
+    openRepairModal();
+    setTimeout(function() { const s=el('rp-car'); if(s) s.value=id; }, 50);
   };
   // Verkoop knop: verberg als al verkocht
   const sellBtn = el('d-sell-btn');
@@ -2661,6 +2749,251 @@ async function saveSale() {
 
 
 
+
+/* ══════════════════════════════════════════
+   WERKPLAATS
+══════════════════════════════════════════ */
+function updateWorkshopBadge() {
+  const active = (appState.repairs||[]).filter(r => r.status !== 'Klaar').length;
+  const badge  = el('workshop-badge');
+  if (!badge) return;
+  badge.textContent = active;
+  badge.style.display = active > 0 ? 'inline-flex' : 'none';
+}
+
+function setWSFilter(f, el_) {
+  appState.wsFilter = f;
+  document.querySelectorAll('#app-view-workshop .filter-chip').forEach(e => e.classList.remove('active'));
+  if (el_) el_.classList.add('active');
+  renderWorkshop();
+}
+
+function wsStatusClass(s) {
+  if (s === 'In behandeling')       return 'in-behandeling';
+  if (s === 'Wacht op onderdelen')  return 'wacht';
+  if (s === 'Klaar')                return 'klaar';
+  return 'aangemeld';
+}
+
+function wsStatusBadge(s) {
+  const cls = wsStatusClass(s);
+  return '<span class="ws-status-badge ws-status-'+cls+'">'+s+'</span>';
+}
+
+function renderWorkshop() {
+  const q    = (el('ws-search')?.value||'').toLowerCase();
+  const f    = appState.wsFilter || 'Alle';
+  const all  = appState.repairs || [];
+
+  let list = all.filter(function(r) {
+    if (f !== 'Alle' && r.status !== f) return false;
+    if (q) {
+      const car = (appState.cars||[]).find(c=>c.id===r.car_id);
+      const hay = (r.titel+' '+(r.monteur||'')+' '+(car?car.make+' '+car.model:'')).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  // KPI's
+  const aangemeld  = all.filter(r=>r.status==='Aangemeld').length;
+  const bezig      = all.filter(r=>r.status==='In behandeling').length;
+  const wacht      = all.filter(r=>r.status==='Wacht op onderdelen').length;
+  const totKosten  = all.reduce((s,r)=>s+(r.kosten_onderdelen||0)+(r.kosten_arbeid||0),0);
+  el('workshop-kpis').innerHTML =
+    '<div class="kpi-card blue"   style="animation-delay:.05s"><div class="kpi-label">Aangemeld</div><div class="kpi-value">'+aangemeld+'</div><div class="kpi-sub">wacht op start</div></div>'
+  + '<div class="kpi-card yellow" style="animation-delay:.10s"><div class="kpi-label">In behandeling</div><div class="kpi-value">'+bezig+'</div><div class="kpi-sub">actief</div></div>'
+  + '<div class="kpi-card red"    style="animation-delay:.15s"><div class="kpi-label">Wacht op onderdelen</div><div class="kpi-value">'+wacht+'</div><div class="kpi-sub">geblokkeerd</div></div>'
+  + '<div class="kpi-card green"  style="animation-delay:.20s"><div class="kpi-label">Totale kosten</div><div class="kpi-value">€'+Math.round(totKosten).toLocaleString('nl')+'</div><div class="kpi-sub">alle opdrachten</div></div>';
+
+  el('ws-count').textContent = list.length + ' opdrachten';
+
+  if (!list.length) {
+    el('workshop-list').innerHTML = '<div style="text-align:center;padding:48px 0;color:var(--text3)"><div style="font-size:36px;margin-bottom:12px">🔧</div><div>Geen werkplaatsopdrachten gevonden</div></div>';
+    return;
+  }
+
+  el('workshop-list').innerHTML = list.map(function(r) {
+    const car   = (appState.cars||[]).find(c=>c.id===r.car_id);
+    const total = (r.kosten_onderdelen||0) + (r.kosten_arbeid||0);
+    const cls   = wsStatusClass(r.status);
+    return '<div class="repair-card status-'+cls+'" data-rid="'+r.id+'" onclick="openRepairModal(this.dataset.rid)">'
+      + '<div class="repair-header">'
+      + '<div class="repair-titel">'+r.titel+'</div>'
+      + wsStatusBadge(r.status)
+      + (total > 0 ? '<div class="repair-kosten">'+fmtEur(total)+'</div>' : '')
+      + '</div>'
+      + '<div class="repair-meta">'
+      + (r.categorie ? '<span>📂 '+r.categorie+'</span>' : '')
+      + (car ? '<span class="task-car-link" data-cid="'+car.id+'" onclick="event.stopPropagation();showDetail(this.dataset.cid)">🚗 '+car.make+' '+car.model+(car.kenteken?' ('+car.kenteken+')':'')+'</span>' : '')
+      + (r.monteur ? '<span>🔧 '+r.monteur+'</span>' : '')
+      + (r.datum_gepland ? '<span>📅 Gepland: '+fmtDate(r.datum_gepland)+'</span>' : '')
+      + (r.datum_gereed  ? '<span style="color:var(--green)">✓ Gereed: '+fmtDate(r.datum_gereed)+'</span>' : '')
+      + (r.kosten_onderdelen ? '<span>Onderdelen: '+fmtEur(r.kosten_onderdelen)+'</span>' : '')
+      + (r.kosten_arbeid     ? '<span>Arbeid: '+fmtEur(r.kosten_arbeid)+'</span>' : '')
+      + '</div>'
+      + (r.omschrijving ? '<div style="font-size:12px;color:var(--text2);margin-top:6px">'+r.omschrijving.slice(0,100)+(r.omschrijving.length>100?'…':'')+'</div>' : '')
+      + ((r.fotos||[]).length ? '<div class="repair-fotos">'+(r.fotos||[]).slice(0,4).map(function(u){ const d=document.createElement('div'); d.className='repair-foto'; d.onclick=function(e){e.stopPropagation();openLightbox([u],0);}; d.innerHTML='<img src="'+u+'" loading="lazy">'; return d.outerHTML; }).join('')+'</div>' : '')
+      + '</div>';
+  }).join('');
+}
+
+
+// Foto upload voor reparaties (via Edge Function)
+function setupRepairUploadZone() {
+  const zone  = el('rp-upload-zone');
+  const input = el('rp-photo-input');
+  if (!zone || !input) return;
+  input.value = '';
+  input.onchange  = function() { handleRepairPhotos(Array.from(input.files)); };
+  zone.ondragover = function(e) { e.preventDefault(); zone.classList.add('dragover'); };
+  zone.ondragleave= function()  { zone.classList.remove('dragover'); };
+  zone.ondrop     = function(e) { e.preventDefault(); zone.classList.remove('dragover'); handleRepairPhotos(Array.from(e.dataTransfer.files).filter(f=>f.type.startsWith('image/'))); };
+}
+
+async function handleRepairPhotos(files) {
+  const bar  = el('rp-upload-bar');
+  const prog = el('rp-upload-progress');
+  if (prog) prog.classList.add('show');
+  const { data: { session } } = await sb.auth.getSession();
+  const token = session?.access_token;
+
+  // Voor reparaties uploaden we naar Cloudinary maar zonder car_id check — we gebruiken een tijdelijke car_id
+  const carId = el('rp-car')?.value;
+  if (!carId) { toast('Selecteer eerst een voertuig','var(--orange)'); if(prog) prog.classList.remove('show'); return; }
+
+  for (let i=0; i<files.length; i++) {
+    const file = files[i];
+    if (bar) bar.style.width = Math.round((i/files.length)*90)+'%';
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('car_id', carId);
+    try {
+      const res  = await fetch(UPLOAD_FN_URL, { method:'POST', headers:{ 'Authorization':'Bearer '+token, 'apikey':SB_KEY }, body:fd });
+      const data = await res.json();
+      if (data.url) {
+        appState.repairFotos = appState.repairFotos || [];
+        appState.repairFotos.push(data.url);
+        renderRepairPhotoPreviews(appState.repairFotos);
+      }
+    } catch(e) { toast('Upload fout: '+e.message,'var(--orange)'); }
+  }
+  if (bar) bar.style.width = '100%';
+  setTimeout(function(){ if(prog) prog.classList.remove('show'); if(bar) bar.style.width='0%'; }, 600);
+}
+function openRepairModal(repairId) {
+  appState.editingRepairId = repairId || null;
+  const r = repairId ? (appState.repairs||[]).find(x=>x.id===repairId) : null;
+
+  el('rp-modal-title').textContent = r ? 'Opdracht bewerken' : 'Nieuwe opdracht';
+  el('rp-titel').value          = r?.titel            || '';
+  el('rp-omschrijving').value   = r?.omschrijving     || '';
+  el('rp-categorie').value      = r?.categorie        || 'Algemeen';
+  el('rp-status').value         = r?.status           || 'Aangemeld';
+  el('rp-monteur').value        = r?.monteur          || '';
+  el('rp-datum-gepland').value  = r?.datum_gepland    || '';
+  el('rp-datum-gereed').value   = r?.datum_gereed     || '';
+  el('rp-onderdelen').value     = r?.kosten_onderdelen|| '';
+  el('rp-arbeid').value         = r?.kosten_arbeid    || '';
+  el('rp-notes').value          = r?.notes            || '';
+
+  // Auto koppeling
+  const carSelect = el('rp-car');
+  carSelect.innerHTML = '<option value="">— Selecteer voertuig —</option>'
+    + (appState.cars||[]).filter(c=>c.status!=='Verkocht').map(c =>
+        '<option value="'+c.id+'"'+(r?.car_id===c.id?' selected':'')+'>'+c.make+' '+c.model+(c.kenteken?' ('+c.kenteken+')':'')+'</option>'
+      ).join('');
+
+  // Taak koppeling
+  const taskSelect = el('rp-task');
+  const carId = r?.car_id || '';
+  const relTasks = (appState.tasks||[]).filter(t=>!carId||t.car_id===carId);
+  taskSelect.innerHTML = '<option value="">— Niet koppelen aan taak —</option>'
+    + relTasks.map(t=>'<option value="'+t.id+'"'+(r?.task_id===t.id?' selected':'')+'>'+t.titel+'</option>').join('');
+
+  // Foto preview
+  renderRepairPhotoPreviews(r?.fotos||[]);
+
+  el('rp-delete-btn').style.display = r ? 'block' : 'none';
+  appState.repairFotos = [...(r?.fotos||[])];
+  hideEl('rp-err');
+  openModal('repair-modal');
+  setTimeout(setupRepairUploadZone, 50);
+}
+
+function renderRepairPhotoPreviews(fotos) {
+  const wrap = el('rp-foto-preview');
+  if (!wrap) return;
+  wrap.innerHTML = (fotos||[]).map(function(u,i) {
+    return '<div style="position:relative;width:70px;height:52px;border-radius:6px;overflow:hidden;border:1px solid var(--border);flex-shrink:0">'
+      + '<img src="'+u+'" style="width:100%;height:100%;object-fit:cover">'
+      + '<button style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.7);color:#fff;border:none;border-radius:50%;width:16px;height:16px;font-size:9px;cursor:pointer" data-idx="'+i+'" onclick="removeRepairFoto(this.dataset.idx)">✕</button>'
+      + '</div>';
+  }).join('');
+  appState.repairFotos = [...(fotos||[])];
+}
+
+function removeRepairFoto(idx) {
+  appState.repairFotos.splice(parseInt(idx), 1);
+  renderRepairPhotoPreviews(appState.repairFotos);
+}
+
+function closeRepairModal() { appCloseModal('repair-modal'); appState.editingRepairId = null; appState.repairFotos = []; }
+
+async function saveRepair() {
+  hideEl('rp-err');
+  const titel = el('rp-titel').value.trim();
+  const carId = el('rp-car').value;
+  if (!titel) { showAlert('rp-err','Voer een opdrachtnaam in.'); return; }
+  if (!carId) { showAlert('rp-err','Selecteer een voertuig.'); return; }
+
+  const payload = {
+    company_id:          appState.companyId,
+    car_id:              carId,
+    task_id:             el('rp-task').value || null,
+    titel,
+    omschrijving:        el('rp-omschrijving').value.trim() || null,
+    categorie:           el('rp-categorie').value,
+    status:              el('rp-status').value,
+    monteur:             el('rp-monteur').value.trim() || null,
+    datum_gepland:       el('rp-datum-gepland').value || null,
+    datum_gereed:        el('rp-datum-gereed').value  || null,
+    kosten_onderdelen:   parseFloat(el('rp-onderdelen').value) || 0,
+    kosten_arbeid:       parseFloat(el('rp-arbeid').value)     || 0,
+    fotos:               appState.repairFotos || [],
+    notes:               el('rp-notes').value.trim() || null,
+  };
+
+  setBtn('rp-save-btn', true, 'Opslaan…');
+  try {
+    let error;
+    if (appState.editingRepairId) {
+      ({ error } = await sb.from('repairs').update(payload).eq('id', appState.editingRepairId));
+    } else {
+      ({ error } = await sb.from('repairs').insert(payload));
+    }
+    if (error) throw error;
+    closeRepairModal();
+    await loadCars();
+    renderWorkshop();
+    toast(appState.editingRepairId ? '✓ Opdracht bijgewerkt' : '✓ Opdracht aangemaakt');
+  } catch(e) {
+    showAlert('rp-err','Fout: '+e.message);
+  } finally {
+    setBtn('rp-save-btn', false, 'Opslaan');
+  }
+}
+
+async function deleteRepair() {
+  if (!appState.editingRepairId) return;
+  const { error } = await sb.from('repairs').delete().eq('id', appState.editingRepairId);
+  if (error) { toast('Fout: '+error.message,'var(--red)'); return; }
+  closeRepairModal();
+  await loadCars();
+  renderWorkshop();
+  toast('🗑 Opdracht verwijderd','var(--orange)');
+}
+
 /* ══════════════════════════════════════════
    CRM — Klantenbeheer
 ══════════════════════════════════════════ */
@@ -3172,6 +3505,62 @@ document.addEventListener('keydown', function(e) {
   </div>
 
 
+
+
+  <!-- REPARATIE MODAL -->
+  <div class="modal-backdrop" id="repair-modal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <div class="modal-title" id="rp-modal-title">Nieuwe opdracht</div>
+        <button class="modal-close" onclick="closeRepairModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid" style="gap:12px">
+          <div class="form-group" style="grid-column:1/-1"><label>Opdracht *</label><input type="text" id="rp-titel" placeholder="bijv. APK keuring, Remmen vervangen…"></div>
+          <div class="form-group" style="grid-column:1/-1"><label>Voertuig *</label><select id="rp-car"></select></div>
+          <div class="form-group"><label>Categorie</label>
+            <select id="rp-categorie">
+              <option>Algemeen</option><option>APK</option><option>Schade</option><option>Onderhoud</option>
+              <option>Elektrisch</option><option>Banden</option><option>Carrosserie</option><option>Interieur</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Status</label>
+            <select id="rp-status">
+              <option>Aangemeld</option><option>In behandeling</option>
+              <option>Wacht op onderdelen</option><option>Klaar</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Monteur</label><input type="text" id="rp-monteur" placeholder="Naam monteur"></div>
+          <div class="form-group"><label>Koppel aan taak</label><select id="rp-task"></select></div>
+          <div class="form-group"><label>Datum gepland</label><input type="date" id="rp-datum-gepland"></div>
+          <div class="form-group"><label>Datum gereed</label><input type="date" id="rp-datum-gereed"></div>
+          <div class="form-group"><label>Kosten onderdelen (€)</label><input type="number" id="rp-onderdelen" placeholder="0.00" min="0" step="0.01"></div>
+          <div class="form-group"><label>Kosten arbeid (€)</label><input type="number" id="rp-arbeid" placeholder="0.00" min="0" step="0.01"></div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label>Foto's</label>
+            <div class="upload-zone" id="rp-upload-zone" style="margin-bottom:8px">
+              <input type="file" id="rp-photo-input" accept="image/*" multiple>
+              <div class="upload-icon">📷</div>
+              <div class="upload-label">Sleep foto's of klik om te selecteren</div>
+              <div class="upload-hint">Schade, reparatie, voor/na foto's</div>
+              <div class="upload-progress" id="rp-upload-progress"><div class="upload-progress-bar" id="rp-upload-bar"></div></div>
+            </div>
+            <div id="rp-foto-preview" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+          </div>
+          <div class="form-group" style="grid-column:1/-1"><label>Omschrijving</label><textarea id="rp-omschrijving" rows="2" style="resize:vertical" placeholder="Details over de werkzaamheden…"></textarea></div>
+          <div class="form-group" style="grid-column:1/-1"><label>Notities</label><textarea id="rp-notes" rows="2" style="resize:vertical"></textarea></div>
+        </div>
+        <div class="alert alert-err" id="rp-err" style="margin-top:14px"></div>
+      </div>
+      <div class="modal-footer" style="justify-content:space-between">
+        <button class="btn btn-danger btn-sm" id="rp-delete-btn" onclick="deleteRepair()" style="display:none">🗑 Verwijderen</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" onclick="closeRepairModal()">Annuleren</button>
+          <button class="btn btn-primary" id="rp-save-btn" onclick="saveRepair()">Opslaan</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- KLANT MODAL -->
   <div class="modal-backdrop" id="customer-modal">
