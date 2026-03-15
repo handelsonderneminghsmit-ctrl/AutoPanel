@@ -317,6 +317,20 @@ tr:hover td{background:var(--surface2);cursor:pointer}
 .filter-chips{display:flex;gap:6px;flex-wrap:wrap}
 .filter-chip{display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);padding:6px 11px;font-size:12px;color:var(--text2);cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;border-radius:2px;white-space:nowrap}
 .filter-chip:hover{border-color:var(--border2);color:var(--text)}.filter-chip.active{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+.filter-panel{background:var(--surface);border:1px solid var(--border);padding:16px;margin-bottom:12px;display:none;animation:fadeIn .15s}
+.filter-panel.open{display:block}
+.filter-panel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.filter-group label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);display:block;margin-bottom:5px}
+.filter-group select,.filter-group input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;border-radius:4px}
+.filter-group select:focus,.filter-group input:focus{border-color:var(--accent)}
+.filter-range{display:flex;gap:6px;align-items:center}
+.filter-range input{flex:1}
+.filter-range span{color:var(--text3);font-size:11px;flex-shrink:0}
+.filter-footer{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
+.filter-active-count{font-family:'DM Mono',monospace;font-size:11px;color:var(--accent)}
+.filter-btn-toggle{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);padding:6px 12px;font-size:12px;color:var(--text2);cursor:pointer;transition:all .15s;border-radius:2px;white-space:nowrap}
+.filter-btn-toggle:hover{border-color:var(--accent);color:var(--accent)}
+.filter-btn-toggle.has-filters{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
 .inventory-count{font-family:monospace;font-size:11px;color:var(--text3)}
 .view-toggle{display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:2px;overflow:hidden}
 .view-btn{padding:5px 10px;font-size:12px;cursor:pointer;color:var(--text2);background:none;border:none;font-family:'DM Sans',sans-serif;transition:all .15s}
@@ -738,14 +752,83 @@ tr:hover td{background:var(--surface2);cursor:pointer}
           </div>
         </div>
         <div class="inventory-toolbar">
-          <div class="search-box"><span style="color:var(--text3);font-size:13px">⌕</span><input type="text" placeholder="Zoek merk, model, kenteken…" oninput="filterCars(this.value)"></div>
-          <div class="filter-chips">
-            <div class="filter-chip active" onclick="appSetFilter(this,'Alle')">Alle</div>
-            <div class="filter-chip" onclick="appSetFilter(this,'Beschikbaar')">Beschikbaar</div>
-            <div class="filter-chip" onclick="appSetFilter(this,'Gereserveerd')">Gereserveerd</div>
-            <div class="filter-chip" onclick="appSetFilter(this,'Verkocht')">Verkocht</div>
-          </div>
+          <div class="search-box"><span style="color:var(--text3);font-size:13px">⌕</span><input type="text" id="inv-search" placeholder="Zoek merk, model, kenteken…" oninput="filterCars(this.value)"></div>
+          <button class="filter-btn-toggle" id="filter-toggle-btn" onclick="toggleFilterPanel()">⚙ Filters <span id="filter-active-badge"></span></button>
           <span class="inventory-count" id="inv-count">Laden…</span>
+        </div>
+        <div class="filter-panel" id="filter-panel">
+          <div class="filter-panel-grid">
+            <div class="filter-group">
+              <label>Status</label>
+              <select id="f-status" onchange="applyFilters()">
+                <option value="">Alle statussen</option>
+                <option value="Beschikbaar">Beschikbaar</option>
+                <option value="Gereserveerd">Gereserveerd</option>
+                <option value="Verkocht">Verkocht</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>Merk</label>
+              <select id="f-merk" onchange="applyFilters()">
+                <option value="">Alle merken</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>Brandstof</label>
+              <select id="f-fuel" onchange="applyFilters()">
+                <option value="">Alle brandstoftypen</option>
+                <option value="Benzine">Benzine</option>
+                <option value="Diesel">Diesel</option>
+                <option value="Elektrisch">Elektrisch</option>
+                <option value="Hybride">Hybride</option>
+                <option value="LPG">LPG</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>Transmissie</label>
+              <select id="f-trans" onchange="applyFilters()">
+                <option value="">Alle transmissies</option>
+                <option value="Automaat">Automaat</option>
+                <option value="Handmatig">Handmatig</option>
+                <option value="CVT">CVT</option>
+                <option value="Semi-automaat">Semi-automaat</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>Bouwjaar</label>
+              <div class="filter-range">
+                <input type="number" id="f-year-min" placeholder="Van" min="1990" max="2030" onchange="applyFilters()">
+                <span>–</span>
+                <input type="number" id="f-year-max" placeholder="Tot" min="1990" max="2030" onchange="applyFilters()">
+              </div>
+            </div>
+            <div class="filter-group">
+              <label>Prijs (€)</label>
+              <div class="filter-range">
+                <input type="number" id="f-price-min" placeholder="Min" min="0" onchange="applyFilters()">
+                <span>–</span>
+                <input type="number" id="f-price-max" placeholder="Max" min="0" onchange="applyFilters()">
+              </div>
+            </div>
+            <div class="filter-group">
+              <label>Max kilometerstand</label>
+              <input type="number" id="f-km-max" placeholder="bijv. 100000" min="0" onchange="applyFilters()">
+            </div>
+            <div class="filter-group">
+              <label>Dagen in stock</label>
+              <select id="f-days" onchange="applyFilters()">
+                <option value="">Alle</option>
+                <option value="7">Meer dan 7 dagen</option>
+                <option value="30">Meer dan 30 dagen</option>
+                <option value="60">Meer dan 60 dagen</option>
+                <option value="90">Meer dan 90 dagen</option>
+              </select>
+            </div>
+          </div>
+          <div class="filter-footer">
+            <span class="filter-active-count" id="filter-active-count"></span>
+            <button class="btn btn-ghost btn-sm" onclick="resetFilters()">✕ Filters wissen</button>
+          </div>
         </div>
         <div id="car-grid-wrap">
           <!-- skeleton -->
@@ -1026,6 +1109,7 @@ let appState = {
   cars: [],           // live data uit Supabase
   loading: true,
   currentFilter: 'Alle',
+  activeFilters: {},
   currentSearch: '',
   currentCarId: null, // detail view
   editingCarId: null, // null = nieuw, uuid = bewerken
@@ -1638,11 +1722,21 @@ function renderDashboard() {
    VOORRAAD — live data
 ══════════════════════════════════════════ */
 function getFiltered() {
-  return appState.cars.filter(c => {
-    const statusOk = appState.currentFilter==='Alle' || c.status===appState.currentFilter;
-    const q = appState.currentSearch.toLowerCase();
-    const searchOk = !q || `${c.make} ${c.model} ${c.kenteken||''}`.toLowerCase().includes(q);
-    return statusOk && searchOk;
+  return appState.cars.filter(function(c) {
+    const f = appState.activeFilters || {};
+    const q = (appState.currentSearch||'').toLowerCase();
+    if (q && !(c.make+' '+c.model+' '+(c.kenteken||'')).toLowerCase().includes(q)) return false;
+    if (f.status   && c.status !== f.status)           return false;
+    if (f.merk     && c.make   !== f.merk)             return false;
+    if (f.fuel     && c.fuel   !== f.fuel)             return false;
+    if (f.trans    && c.transmission !== f.trans)      return false;
+    if (f.yearMin  && c.year < parseInt(f.yearMin))    return false;
+    if (f.yearMax  && c.year > parseInt(f.yearMax))    return false;
+    if (f.priceMin && c.price < parseFloat(f.priceMin)) return false;
+    if (f.priceMax && c.price > parseFloat(f.priceMax)) return false;
+    if (f.kmMax    && c.km    > parseInt(f.kmMax))     return false;
+    if (f.days     && (c.days_in_stock||0) <= parseInt(f.days)) return false;
+    return true;
   });
 }
 
@@ -1687,8 +1781,59 @@ function renderInventory() {
   }).join('');
 }
 
-function filterCars(q)       { appState.currentSearch=q; renderInventory(); }
-function appSetFilter(e,s)   { document.querySelectorAll('.filter-chip').forEach(x=>x.classList.remove('active')); e.classList.add('active'); appState.currentFilter=s; renderInventory(); }
+function filterCars(q) { appState.currentSearch=q; renderInventory(); }
+function appSetFilter(e,s) { appState.currentFilter=s; renderInventory(); }
+
+function toggleFilterPanel() {
+  const panel = el('filter-panel');
+  const btn   = el('filter-toggle-btn');
+  panel.classList.toggle('open');
+  // Vul merk dropdown dynamisch
+  const merken = [...new Set(appState.cars.map(c=>c.make).filter(Boolean))].sort();
+  const merkEl = el('f-merk');
+  const cur    = merkEl.value;
+  merkEl.innerHTML = '<option value="">Alle merken</option>' + merken.map(m=>'<option value="'+m+'"'+(m===cur?' selected':'')+'>'+m+'</option>').join('');
+}
+
+function applyFilters() {
+  const f = {};
+  const v = id => { const e = el(id); return e ? e.value.trim() : ''; };
+  if (v('f-status'))    f.status   = v('f-status');
+  if (v('f-merk'))      f.merk     = v('f-merk');
+  if (v('f-fuel'))      f.fuel     = v('f-fuel');
+  if (v('f-trans'))     f.trans    = v('f-trans');
+  if (v('f-year-min'))  f.yearMin  = v('f-year-min');
+  if (v('f-year-max'))  f.yearMax  = v('f-year-max');
+  if (v('f-price-min')) f.priceMin = v('f-price-min');
+  if (v('f-price-max')) f.priceMax = v('f-price-max');
+  if (v('f-km-max'))    f.kmMax    = v('f-km-max');
+  if (v('f-days'))      f.days     = v('f-days');
+  appState.activeFilters = f;
+
+  const count = Object.keys(f).length;
+  const badge = el('filter-active-badge');
+  const btn   = el('filter-toggle-btn');
+  const countEl = el('filter-active-count');
+  if (badge)  badge.textContent  = count ? ' ('+count+')' : '';
+  if (btn)    btn.classList.toggle('has-filters', count > 0);
+  if (countEl) countEl.textContent = count ? count + ' filter' + (count>1?'s':'') + ' actief' : '';
+  renderInventory();
+}
+
+function resetFilters() {
+  ['f-status','f-merk','f-fuel','f-trans','f-year-min','f-year-max','f-price-min','f-price-max','f-km-max','f-days'].forEach(id => { const e = el(id); if (e) e.value = ''; });
+  appState.activeFilters = {};
+  appState.currentSearch = '';
+  const searchEl = el('inv-search');
+  if (searchEl) searchEl.value = '';
+  const badge   = el('filter-active-badge');
+  const btn     = el('filter-toggle-btn');
+  const countEl = el('filter-active-count');
+  if (badge)   badge.textContent  = '';
+  if (btn)     btn.classList.remove('has-filters');
+  if (countEl) countEl.textContent = '';
+  renderInventory();
+}
 function setGridView(g)      { el('grid-btn').classList.toggle('active',g); el('list-btn').classList.toggle('active',!g); el('car-grid').style.gridTemplateColumns=g?'repeat(auto-fill,minmax(268px,1fr))':'1fr'; }
 
 /* ══════════════════════════════════════════
