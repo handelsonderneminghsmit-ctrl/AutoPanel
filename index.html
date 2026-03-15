@@ -636,6 +636,17 @@ tr:hover td{background:var(--surface2);cursor:pointer}
 .repair-fotos{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .repair-foto{width:60px;height:45px;border-radius:4px;overflow:hidden;border:1px solid var(--border);cursor:zoom-in}
 .repair-foto img{width:100%;height:100%;object-fit:cover}
+
+/* ─── INKOOP ──────────────────────────────── */
+.purchase-card{background:var(--surface);border:1px solid var(--border);padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:border-color .15s,transform .15s;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start}
+.purchase-card:hover{border-color:var(--border2);transform:translateX(2px)}
+.purchase-bron-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;font-family:'DM Mono',monospace;text-transform:uppercase;background:var(--surface2);color:var(--text2)}
+.purchase-bron-veiling{background:rgba(60,180,232,.15);color:var(--blue)}
+.purchase-bron-inruil{background:rgba(232,240,60,.1);color:var(--accent)}
+.purchase-bron-import{background:rgba(60,232,180,.1);color:var(--teal)}
+.purchase-bron-dealer{background:rgba(232,60,106,.1);color:var(--red)}
+.pu-total{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--text)}
+.pu-breakdown{font-size:11px;color:var(--text3);margin-top:2px;text-align:right}
 </style>
 </head>
 <body>
@@ -752,6 +763,7 @@ tr:hover td{background:var(--surface2);cursor:pointer}
       <div class="sb-item" id="nav-tasks" onclick="appShowView('tasks');closeSidebar()"><span class="icon">☑</span>Taken<span class="sb-badge alert" id="tasks-badge" style="display:none">0</span></div>
       <div class="sb-item" id="nav-crm" onclick="appShowView('crm');closeSidebar()"><span class="icon">👥</span>Klanten<span class="sb-badge" id="crm-badge" style="display:none">0</span></div>
       <div class="sb-item" id="nav-workshop" onclick="appShowView('workshop');closeSidebar()"><span class="icon">🔧</span>Werkplaats<span class="sb-badge alert" id="workshop-badge" style="display:none">0</span></div>
+      <div class="sb-item" id="nav-purchases" onclick="appShowView('purchases');closeSidebar()"><span class="icon">↕</span>Inkoop</div>
       <div class="sb-item" id="nav-export" onclick="appShowView('export');closeSidebar()"><span class="icon">↗</span>Advertentie-export</div>
       <div class="sb-item" id="nav-ai" onclick="appShowView('ai');closeSidebar()"><span class="icon">◎</span>AI-assistent<span class="sb-badge" style="background:var(--teal);color:#000">Nieuw</span></div>
       <div class="sb-section">Handel</div>
@@ -955,6 +967,13 @@ tr:hover td{background:var(--surface2);cursor:pointer}
             </div>
             <div class="detail-panel">
               <div class="panel-header">
+                <div class="panel-title">Inkoop</div>
+                <button class="btn btn-ghost btn-sm" id="d-add-purchase-btn">+ Registreren</button>
+              </div>
+              <div id="d-purchase-info"></div>
+            </div>
+            <div class="detail-panel">
+              <div class="panel-header">
                 <div class="panel-title">Werkplaats</div>
                 <button class="btn btn-ghost btn-sm" id="d-add-repair-btn">+ Opdracht</button>
               </div>
@@ -1057,6 +1076,28 @@ tr:hover td{background:var(--surface2);cursor:pointer}
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- INKOOP -->
+      <div class="app-view" id="app-view-purchases">
+        <div class="section-header">
+          <div class="section-title">Inkoopregistratie</div>
+          <button class="btn btn-primary btn-sm" onclick="openPurchaseModal()">+ Inkoop registreren</button>
+        </div>
+        <div class="fin-kpi-strip" id="purchases-kpis" style="margin-bottom:14px"></div>
+        <div class="inventory-toolbar" style="margin-bottom:12px">
+          <div class="search-box"><span style="color:var(--text3);font-size:13px">⌕</span><input type="text" id="pu-search" placeholder="Zoek voertuig, verkoper, bron…" oninput="renderPurchases()"></div>
+          <div class="filter-chips">
+            <div class="filter-chip active" onclick="setPUFilter('Alle',this)">Alle</div>
+            <div class="filter-chip" onclick="setPUFilter('Privépersoon',this)">Privé</div>
+            <div class="filter-chip" onclick="setPUFilter('Veiling',this)">Veiling</div>
+            <div class="filter-chip" onclick="setPUFilter('Inruil',this)">Inruil</div>
+            <div class="filter-chip" onclick="setPUFilter('Import',this)">Import</div>
+            <div class="filter-chip" onclick="setPUFilter('Dealer',this)">Dealer</div>
+          </div>
+          <span class="inventory-count" id="pu-count"></span>
+        </div>
+        <div id="purchases-list"></div>
       </div>
 
       <!-- WERKPLAATS -->
@@ -1319,6 +1360,8 @@ let appState = {
   currentCustomerId: null,
   repairs: [],
   wsFilter: 'Alle',
+  purchases: [],
+  puFilter: 'Alle',
   cars: [],           // live data uit Supabase
   loading: true,
   currentFilter: 'Alle',
@@ -1418,7 +1461,7 @@ async function routeUser(user) {
 async function loadCars() {
   appState.loading = true;
   try {
-    const [carsRes, salesRes, tasksRes, customersRes, contactsRes, tradeInsRes, repairsRes] = await Promise.all([
+    const [carsRes, salesRes, tasksRes, customersRes, contactsRes, tradeInsRes, repairsRes, purchasesRes] = await Promise.all([
       sb.from('cars_with_days')
         .select('*, car_images(url, is_primary, sort_order)')
         .eq('company_id', appState.companyId)
@@ -1446,7 +1489,11 @@ async function loadCars() {
       sb.from('repairs')
         .select('*')
         .eq('company_id', appState.companyId)
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: false }),
+      sb.from('purchases')
+        .select('*')
+        .eq('company_id', appState.companyId)
+        .order('inkoop_datum', { ascending: false })
     ]);
 
     if (carsRes.error) throw carsRes.error;
@@ -1457,6 +1504,7 @@ async function loadCars() {
     appState.contactMoments= contactsRes.data     || [];
     appState.tradeIns      = tradeInsRes.data     || [];
     appState.repairs       = repairsRes.data      || [];
+    appState.purchases     = purchasesRes.data    || [];
     updateWorkshopBadge();
     updateTasksBadge();
     appState.loading = false;
@@ -1889,6 +1937,7 @@ function appShowView(v) {
   if(v==='tasks')     renderTasks();
   if(v==='crm')       renderCRM();
   if(v==='workshop')  renderWorkshop();
+  if(v==='purchases') renderPurchases();
   if(v==='export')    renderExport();
   if(v==='ai')        renderAI();
   window.scrollTo(0,0);
@@ -2181,6 +2230,33 @@ function showDetail(id) {
       dRepairTotal.textContent = fmtEur(totalKosten);
     }
   }
+  // Inkoop voor deze auto
+  const carPurchase = (appState.purchases||[]).find(p => p.car_id === id);
+  const dPurchaseInfo = el('d-purchase-info');
+  if (dPurchaseInfo) {
+    if (!carPurchase) {
+      dPurchaseInfo.innerHTML = '<div style="padding:12px 18px;color:var(--text3);font-size:12px">Nog geen inkoop geregistreerd</div>';
+    } else {
+      const bijkomend = (carPurchase.kosten_transport||0)+(carPurchase.kosten_invoer||0)+(carPurchase.kosten_btw||0)+(carPurchase.kosten_overig||0);
+      const totaal    = (carPurchase.inkoop_prijs||0) + bijkomend;
+      dPurchaseInfo.innerHTML =
+        '<div style="padding:12px 16px;display:grid;gap:6px">'
+        + '<div class="cd-row"><div class="cd-key">Bron</div><div class="cd-val">'+puBronBadge(carPurchase.bron)+(carPurchase.veilingplatform?' · '+carPurchase.veilingplatform:'')+'</div></div>'
+        + '<div class="cd-row"><div class="cd-key">Datum</div><div class="cd-val">'+fmtDate(carPurchase.inkoop_datum)+'</div></div>'
+        + '<div class="cd-row"><div class="cd-key">Inkoopprijs</div><div class="cd-val">'+fmtEur(carPurchase.inkoop_prijs||0)+'</div></div>'
+        + (bijkomend > 0 ? '<div class="cd-row"><div class="cd-key">Bijkomend</div><div class="cd-val">'+fmtEur(bijkomend)+'</div></div>' : '')
+        + '<div class="cd-row"><div class="cd-key">Totaal</div><div class="cd-val" style="font-weight:700;color:var(--text)">'+fmtEur(totaal)+'</div></div>'
+        + (carPurchase.verkoper_naam ? '<div class="cd-row"><div class="cd-key">Verkoper</div><div class="cd-val">'+carPurchase.verkoper_naam+'</div></div>' : '')
+        + (carPurchase.inspectie_score ? '<div class="cd-row"><div class="cd-key">Inspectie</div><div class="cd-val">'+carPurchase.inspectie_score+'/10</div></div>' : '')
+        + '</div>'
+        + '<div style="padding:6px 16px 10px"><button class="btn btn-ghost btn-sm" data-pid="'+carPurchase.id+'" onclick="openPurchaseModal(this.dataset.pid)">✎ Bewerken</button></div>';
+    }
+  }
+  el('d-add-purchase-btn').onclick = function() {
+    openPurchaseModal();
+    setTimeout(function() { const s=el('pm-car'); if(s) s.value=id; }, 50);
+  };
+
   el('d-add-repair-btn').onclick = function() {
     openRepairModal();
     setTimeout(function() { const s=el('rp-car'); if(s) s.value=id; }, 50);
@@ -2749,6 +2825,256 @@ async function saveSale() {
 
 
 
+
+
+/* ══════════════════════════════════════════
+   INKOOPREGISTRATIE
+══════════════════════════════════════════ */
+function setPUFilter(f, el_) {
+  appState.puFilter = f;
+  document.querySelectorAll('#app-view-purchases .filter-chip').forEach(e => e.classList.remove('active'));
+  if (el_) el_.classList.add('active');
+  renderPurchases();
+}
+
+function puBronBadge(bron) {
+  const cls = {Veiling:'veiling',Inruil:'inruil',Import:'import',Dealer:'dealer'}[bron] || '';
+  return '<span class="purchase-bron-badge'+(cls?' purchase-bron-'+cls:'')+'">'+bron+'</span>';
+}
+
+function renderPurchases() {
+  const q   = (el('pu-search')?.value||'').toLowerCase();
+  const f   = appState.puFilter || 'Alle';
+  const all = appState.purchases || [];
+
+  let list = all.filter(function(p) {
+    if (f !== 'Alle' && p.bron !== f) return false;
+    if (q) {
+      const car = (appState.cars||[]).find(c=>c.id===p.car_id);
+      const hay = ((car?car.make+' '+car.model:'')+' '+(p.verkoper_naam||'')+' '+(p.bron||'')+' '+(p.veilingplatform||'')).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  // KPI's
+  const totInkoop    = all.reduce((s,p)=>s+(p.inkoop_prijs||0),0);
+  const totKosten    = all.reduce((s,p)=>s+(p.kosten_transport||0)+(p.kosten_invoer||0)+(p.kosten_btw||0)+(p.kosten_overig||0),0);
+  const gemPrijs     = all.length ? Math.round(totInkoop/all.length) : 0;
+  const bronCounts   = {};
+  all.forEach(p=>{ bronCounts[p.bron]=(bronCounts[p.bron]||0)+1; });
+  const topBron      = Object.entries(bronCounts).sort((a,b)=>b[1]-a[1])[0]?.[0] || '—';
+
+  el('purchases-kpis').innerHTML =
+    '<div class="kpi-card green"  style="animation-delay:.05s"><div class="kpi-label">Totale inkoop</div><div class="kpi-value">€'+Math.round(totInkoop/1000)+'K</div><div class="kpi-sub">'+all.length+' voertuigen</div></div>'
+  + '<div class="kpi-card red"    style="animation-delay:.10s"><div class="kpi-label">Bijkomende kosten</div><div class="kpi-value">€'+Math.round(totKosten/1000)+'K</div><div class="kpi-sub">transport, invoer, BTW</div></div>'
+  + '<div class="kpi-card blue"   style="animation-delay:.15s"><div class="kpi-label">Gemiddelde inkoopprijs</div><div class="kpi-value">€'+Math.round(gemPrijs/1000)+'K</div><div class="kpi-sub">per voertuig</div></div>'
+  + '<div class="kpi-card yellow" style="animation-delay:.20s"><div class="kpi-label">Meest gebruikt</div><div class="kpi-value" style="font-size:16px">'+topBron+'</div><div class="kpi-sub">inkoopkanaal</div></div>';
+
+  el('pu-count').textContent = list.length + ' inkopen';
+
+  if (!list.length) {
+    el('purchases-list').innerHTML = '<div style="text-align:center;padding:48px 0;color:var(--text3)"><div style="font-size:36px;margin-bottom:12px">↕</div><div>Geen inkopen gevonden</div><button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="openPurchaseModal()">+ Eerste inkoop registreren</button></div>';
+    return;
+  }
+
+  el('purchases-list').innerHTML = list.map(function(p) {
+    const car      = (appState.cars||[]).find(c=>c.id===p.car_id);
+    const bijkomend= (p.kosten_transport||0)+(p.kosten_invoer||0)+(p.kosten_btw||0)+(p.kosten_overig||0);
+    const totaal   = (p.inkoop_prijs||0) + bijkomend;
+    return '<div class="purchase-card" data-pid="'+p.id+'" onclick="openPurchaseModal(this.dataset.pid)">'
+      + '<div>'
+      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+      + puBronBadge(p.bron)
+      + (p.veilingplatform ? '<span style="font-size:11px;color:var(--text3)">'+p.veilingplatform+'</span>' : '')
+      + '<span style="font-size:11px;color:var(--text3)">'+fmtDate(p.inkoop_datum)+'</span>'
+      + '</div>'
+      + '<div style="font-weight:600;font-size:13.5px;color:var(--text);margin-bottom:4px">'+(car?car.make+' '+car.model+' ('+car.year+')':'Onbekend voertuig')+'</div>'
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--text3)">'
+      + (p.verkoper_naam ? '<span>👤 '+p.verkoper_naam+'</span>' : '')
+      + (p.inspectie_score ? '<span>📋 Score: '+p.inspectie_score+'/10</span>' : '')
+      + ((p.fotos||[]).length ? '<span>📷 '+(p.fotos||[]).length+' fotos</span>' : '')
+      + '</div>'
+      + '</div>'
+      + '<div style="text-align:right">'
+      + '<div class="pu-total">'+fmtEur(totaal)+'</div>'
+      + '<div class="pu-breakdown">Inkoop: '+fmtEur(p.inkoop_prijs||0)+'</div>'
+      + (bijkomend > 0 ? '<div class="pu-breakdown">+ kosten: '+fmtEur(bijkomend)+'</div>' : '')
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function openPurchaseModal(purchaseId) {
+  appState.editingPurchaseId = purchaseId || null;
+  const p = purchaseId ? (appState.purchases||[]).find(x=>x.id===purchaseId) : null;
+
+  el('pm-modal-title').textContent = p ? 'Inkoop bewerken' : 'Inkoop registreren';
+  el('pm-bron').value              = p?.bron              || 'Privépersoon';
+  el('pm-veiling').value           = p?.veilingplatform   || '';
+  el('pm-datum').value             = p?.inkoop_datum      || new Date().toISOString().slice(0,10);
+  el('pm-prijs').value             = p?.inkoop_prijs      || '';
+  el('pm-transport').value         = p?.kosten_transport  || '';
+  el('pm-invoer').value            = p?.kosten_invoer     || '';
+  el('pm-btw').value               = p?.kosten_btw        || '';
+  el('pm-overig').value            = p?.kosten_overig     || '';
+  el('pm-overig-omschrijving').value = p?.kosten_overig_omschrijving || '';
+  el('pm-verkoper-naam').value     = p?.verkoper_naam     || '';
+  el('pm-verkoper-tel').value      = p?.verkoper_telefoon || '';
+  el('pm-verkoper-email').value    = p?.verkoper_email    || '';
+  el('pm-verkoper-adres').value    = p?.verkoper_adres    || '';
+  el('pm-inspectie').value         = p?.inspectie_rapport || '';
+  el('pm-score').value             = p?.inspectie_score   || '';
+  el('pm-notes').value             = p?.notes             || '';
+
+  // Veilingveld tonen/verbergen
+  toggleVeilingField();
+
+  // Auto koppeling
+  const carSelect = el('pm-car');
+  carSelect.innerHTML = '<option value="">— Selecteer voertuig —</option>'
+    + (appState.cars||[]).map(c=>'<option value="'+c.id+'"'+(p?.car_id===c.id?' selected':'')+'>'+c.make+' '+c.model+(c.kenteken?' ('+c.kenteken+')':'')+'</option>').join('');
+
+  // Klant (voor inruil)
+  const custSelect = el('pm-customer');
+  custSelect.innerHTML = '<option value="">— Niet koppelen —</option>'
+    + (appState.customers||[]).map(cu=>'<option value="'+cu.id+'"'+(p?.customer_id===cu.id?' selected':'')+'>'+cu.voornaam+' '+cu.achternaam+'</option>').join('');
+
+  // Foto's
+  appState.purchaseFotos = [...(p?.fotos||[])];
+  renderPurchasePhotoPreviews(appState.purchaseFotos);
+
+  el('pm-delete-btn').style.display = p ? 'block' : 'none';
+  hideEl('pm-err');
+  openModal('purchase-modal');
+  setTimeout(setupPurchaseUploadZone, 50);
+}
+
+function toggleVeilingField() {
+  const bron = el('pm-bron')?.value;
+  const veilWrap = el('pm-veiling-wrap');
+  if (veilWrap) veilWrap.style.display = bron === 'Veiling' ? 'block' : 'none';
+}
+
+function renderPurchasePhotoPreviews(fotos) {
+  const wrap = el('pm-foto-preview');
+  if (!wrap) return;
+  wrap.innerHTML = (fotos||[]).map(function(u,i) {
+    return '<div style="position:relative;width:70px;height:52px;border-radius:6px;overflow:hidden;border:1px solid var(--border);flex-shrink:0">'
+      + '<img src="'+u+'" style="width:100%;height:100%;object-fit:cover">'
+      + '<button style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.7);color:#fff;border:none;border-radius:50%;width:16px;height:16px;font-size:9px;cursor:pointer" data-idx="'+i+'" onclick="removePurchaseFoto(this.dataset.idx)">✕</button>'
+      + '</div>';
+  }).join('');
+}
+
+function removePurchaseFoto(idx) {
+  appState.purchaseFotos.splice(parseInt(idx), 1);
+  renderPurchasePhotoPreviews(appState.purchaseFotos);
+}
+
+function setupPurchaseUploadZone() {
+  const zone  = el('pm-upload-zone');
+  const input = el('pm-photo-input');
+  if (!zone || !input) return;
+  input.value = '';
+  input.onchange   = function() { handlePurchasePhotos(Array.from(input.files)); };
+  zone.ondragover  = function(e) { e.preventDefault(); zone.classList.add('dragover'); };
+  zone.ondragleave = function()  { zone.classList.remove('dragover'); };
+  zone.ondrop      = function(e) { e.preventDefault(); zone.classList.remove('dragover'); handlePurchasePhotos(Array.from(e.dataTransfer.files).filter(f=>f.type.startsWith('image/'))); };
+}
+
+async function handlePurchasePhotos(files) {
+  const carId = el('pm-car')?.value;
+  if (!carId) { toast('Selecteer eerst een voertuig','var(--orange)'); return; }
+  const { data: { session } } = await sb.auth.getSession();
+  const token = session?.access_token;
+  const prog = el('pm-upload-progress');
+  const bar  = el('pm-upload-bar');
+  if (prog) prog.classList.add('show');
+  for (let i=0; i<files.length; i++) {
+    if (bar) bar.style.width = Math.round((i/files.length)*90)+'%';
+    const fd = new FormData();
+    fd.append('file', files[i]);
+    fd.append('car_id', carId);
+    try {
+      const res  = await fetch(UPLOAD_FN_URL, { method:'POST', headers:{'Authorization':'Bearer '+token,'apikey':SB_KEY}, body:fd });
+      const data = await res.json();
+      if (data.url) { appState.purchaseFotos.push(data.url); renderPurchasePhotoPreviews(appState.purchaseFotos); }
+    } catch(e) { toast('Upload fout: '+e.message,'var(--orange)'); }
+  }
+  if (bar) bar.style.width = '100%';
+  setTimeout(function(){ if(prog) prog.classList.remove('show'); if(bar) bar.style.width='0%'; }, 600);
+}
+
+function closePurchaseModal() { appCloseModal('purchase-modal'); appState.editingPurchaseId = null; appState.purchaseFotos = []; }
+
+async function savePurchase() {
+  hideEl('pm-err');
+  const carId = el('pm-car').value;
+  const prijs = parseFloat(el('pm-prijs').value);
+  if (!carId) { showAlert('pm-err','Selecteer een voertuig.'); return; }
+  if (isNaN(prijs)) { showAlert('pm-err','Voer een inkoopprijs in.'); return; }
+
+  const payload = {
+    company_id:                  appState.companyId,
+    car_id:                      carId,
+    customer_id:                 el('pm-customer').value || null,
+    bron:                        el('pm-bron').value,
+    veilingplatform:             el('pm-veiling').value.trim() || null,
+    inkoop_datum:                el('pm-datum').value,
+    inkoop_prijs:                prijs,
+    kosten_transport:            parseFloat(el('pm-transport').value) || 0,
+    kosten_invoer:               parseFloat(el('pm-invoer').value)    || 0,
+    kosten_btw:                  parseFloat(el('pm-btw').value)       || 0,
+    kosten_overig:               parseFloat(el('pm-overig').value)    || 0,
+    kosten_overig_omschrijving:  el('pm-overig-omschrijving').value.trim() || null,
+    verkoper_naam:               el('pm-verkoper-naam').value.trim()  || null,
+    verkoper_telefoon:           el('pm-verkoper-tel').value.trim()   || null,
+    verkoper_email:              el('pm-verkoper-email').value.trim() || null,
+    verkoper_adres:              el('pm-verkoper-adres').value.trim() || null,
+    inspectie_rapport:           el('pm-inspectie').value.trim()      || null,
+    inspectie_score:             parseInt(el('pm-score').value)       || null,
+    fotos:                       appState.purchaseFotos || [],
+    notes:                       el('pm-notes').value.trim()          || null,
+  };
+
+  // Update auto inkoop_prijs ook
+  const totaalKosten = payload.kosten_transport + payload.kosten_invoer + payload.kosten_btw + payload.kosten_overig;
+  const totalInkoop  = prijs + totaalKosten;
+
+  setBtn('pm-save-btn', true, 'Opslaan…');
+  try {
+    let error;
+    if (appState.editingPurchaseId) {
+      ({ error } = await sb.from('purchases').update(payload).eq('id', appState.editingPurchaseId));
+    } else {
+      ({ error } = await sb.from('purchases').insert(payload));
+    }
+    if (error) throw error;
+
+    // Sync inkoop_prijs naar cars tabel
+    await sb.from('cars').update({ inkoop_price: totalInkoop }).eq('id', carId);
+
+    closePurchaseModal();
+    await loadCars();
+    renderPurchases();
+    toast('✓ Inkoop geregistreerd — ' + fmtEur(totalInkoop));
+  } catch(e) {
+    showAlert('pm-err','Fout: '+e.message);
+  } finally {
+    setBtn('pm-save-btn', false, 'Opslaan');
+  }
+}
+
+async function deletePurchase() {
+  if (!appState.editingPurchaseId) return;
+  const { error } = await sb.from('purchases').delete().eq('id', appState.editingPurchaseId);
+  if (error) { toast('Fout: '+error.message,'var(--red)'); return; }
+  closePurchaseModal();
+  await loadCars();
+  renderPurchases();
+  toast('🗑 Inkoop verwijderd','var(--orange)');
+}
 
 /* ══════════════════════════════════════════
    WERKPLAATS
@@ -3506,6 +3832,78 @@ document.addEventListener('keydown', function(e) {
 
 
 
+
+
+  <!-- INKOOP MODAL -->
+  <div class="modal-backdrop" id="purchase-modal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <div class="modal-title" id="pm-modal-title">Inkoop registreren</div>
+        <button class="modal-close" onclick="closePurchaseModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Algemeen</div>
+        <div class="form-grid" style="gap:12px;margin-bottom:16px">
+          <div class="form-group" style="grid-column:1/-1"><label>Voertuig *</label><select id="pm-car"></select></div>
+          <div class="form-group"><label>Inkoopbron</label>
+            <select id="pm-bron" onchange="toggleVeilingField()">
+              <option>Privépersoon</option><option>Veiling</option><option>Inruil</option>
+              <option>Import</option><option>Dealer</option><option>Overig</option>
+            </select>
+          </div>
+          <div class="form-group" id="pm-veiling-wrap" style="display:none"><label>Veilingplatform</label>
+            <select id="pm-veiling">
+              <option value="">— Selecteer platform —</option>
+              <option>BCA</option><option>Autorola</option><option>Manheim</option>
+              <option>Ovaa</option><option>Troostwijk</option><option>CarNext</option><option>Overig</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Inkoopdatum</label><input type="date" id="pm-datum"></div>
+          <div class="form-group"><label>Koppel aan klant (inruil)</label><select id="pm-customer"></select></div>
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Prijzen</div>
+        <div class="form-grid" style="gap:12px;margin-bottom:16px">
+          <div class="form-group"><label>Inkoopprijs (€) *</label><input type="number" id="pm-prijs" placeholder="15000" min="0"></div>
+          <div class="form-group"><label>Transport (€)</label><input type="number" id="pm-transport" placeholder="0" min="0"></div>
+          <div class="form-group"><label>Invoerkosten (€)</label><input type="number" id="pm-invoer" placeholder="0" min="0"></div>
+          <div class="form-group"><label>BTW (€)</label><input type="number" id="pm-btw" placeholder="0" min="0"></div>
+          <div class="form-group"><label>Overige kosten (€)</label><input type="number" id="pm-overig" placeholder="0" min="0"></div>
+          <div class="form-group"><label>Omschrijving overig</label><input type="text" id="pm-overig-omschrijving" placeholder="bijv. cleaning, keuring…"></div>
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Verkoper</div>
+        <div class="form-grid" style="gap:12px;margin-bottom:16px">
+          <div class="form-group"><label>Naam</label><input type="text" id="pm-verkoper-naam" placeholder="Naam verkoper"></div>
+          <div class="form-group"><label>Telefoon</label><input type="tel" id="pm-verkoper-tel" placeholder="+31 6…"></div>
+          <div class="form-group"><label>Email</label><input type="email" id="pm-verkoper-email" placeholder="verkoper@email.nl"></div>
+          <div class="form-group"><label>Adres</label><input type="text" id="pm-verkoper-adres" placeholder="Straat, stad"></div>
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Inspectie &amp; Foto's</div>
+        <div class="form-grid" style="gap:12px;margin-bottom:16px">
+          <div class="form-group"><label>Inspectiescore (1-10)</label><input type="number" id="pm-score" placeholder="7" min="1" max="10"></div>
+          <div class="form-group" style="grid-column:1/-1"><label>Inspectierapport</label><textarea id="pm-inspectie" rows="2" style="resize:vertical" placeholder="Bevindingen bij inspectie…"></textarea></div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label>Foto's</label>
+            <div class="upload-zone" id="pm-upload-zone" style="margin-bottom:8px">
+              <input type="file" id="pm-photo-input" accept="image/*" multiple>
+              <div class="upload-icon">📷</div>
+              <div class="upload-label">Inspectiefoto's, schade, kilometerstand</div>
+              <div class="upload-progress" id="pm-upload-progress"><div class="upload-progress-bar" id="pm-upload-bar"></div></div>
+            </div>
+            <div id="pm-foto-preview" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+          </div>
+        </div>
+        <div class="form-group"><label>Notities</label><textarea id="pm-notes" rows="2" style="resize:vertical"></textarea></div>
+        <div class="alert alert-err" id="pm-err" style="margin-top:14px"></div>
+      </div>
+      <div class="modal-footer" style="justify-content:space-between">
+        <button class="btn btn-danger btn-sm" id="pm-delete-btn" onclick="deletePurchase()" style="display:none">🗑 Verwijderen</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" onclick="closePurchaseModal()">Annuleren</button>
+          <button class="btn btn-primary" id="pm-save-btn" onclick="savePurchase()">Opslaan</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- REPARATIE MODAL -->
   <div class="modal-backdrop" id="repair-modal">
