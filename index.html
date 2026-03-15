@@ -685,6 +685,22 @@ tr:hover td{background:var(--surface2);cursor:pointer}
 .perm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;margin-top:10px}
 .perm-item{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2)}
 .perm-item input{width:14px;height:14px;flex-shrink:0}
+
+/* ─── EXPORT ──────────────────────────────── */
+.platform-row{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s}
+.platform-row:last-child{border-bottom:none}
+.platform-row:hover{background:var(--surface2)}
+.platform-row.selected{background:var(--accent-dim)}
+.platform-check-box{width:16px;height:16px;border-radius:3px;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;transition:all .15s}
+.platform-row.selected .platform-check-box{background:var(--accent);border-color:var(--accent);color:#000}
+.platform-icon{font-size:20px;flex-shrink:0}
+.platform-name{font-weight:600;font-size:13px;color:var(--text)}
+.platform-desc{font-size:11px;color:var(--text3)}
+.export-foto-thumb{width:80px;height:60px;border-radius:6px;overflow:hidden;border:2px solid var(--border);cursor:pointer;transition:border-color .15s;flex-shrink:0;position:relative}
+.export-foto-thumb.selected{border-color:var(--accent)}
+.export-foto-thumb img{width:100%;height:100%;object-fit:cover}
+.export-foto-thumb .foto-num{position:absolute;bottom:2px;right:2px;background:var(--accent);color:#000;font-size:8px;font-weight:700;padding:1px 4px;border-radius:2px;font-family:monospace;display:none}
+.export-foto-thumb.selected .foto-num{display:block}
 </style>
 </head>
 <body>
@@ -1094,36 +1110,80 @@ tr:hover td{background:var(--surface2);cursor:pointer}
 
       <!-- ADVERTENTIE EXPORT -->
       <div class="app-view" id="app-view-export">
-        <div class="section-header"><div class="section-title">Advertentie-export</div></div>
-        <div style="margin-bottom:14px">
-          <label style="font-family:monospace;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);display:block;margin-bottom:8px">Selecteer voertuig</label>
-          <select class="ex-select" id="export-car-select" onchange="updateExport()"></select>
-        </div>
-        <div class="export-grid">
-          <div class="panel">
-            <div class="panel-header"><div class="panel-title">Platform kiezen</div></div>
-            <div class="panel-body" style="display:flex;flex-direction:column;gap:8px" id="platform-list"></div>
+        <div class="section-header">
+          <div class="section-title">Advertentie-export</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="exportXML()">⬇ XML datafeed</button>
+            <button class="btn btn-ghost btn-sm" onclick="exportCSV()">⬇ CSV datafeed</button>
           </div>
+        </div>
+
+        <!-- Voertuig selectie -->
+        <div style="margin-bottom:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <select class="ex-select" id="export-car-select" onchange="updateExport()" style="flex:1;min-width:200px;max-width:400px"></select>
+          <select id="export-lang" onchange="updateExport()" style="font-size:12px;padding:6px 10px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px">
+            <option value="nl">🇳🇱 Nederlands</option>
+            <option value="en">🇬🇧 Engels</option>
+            <option value="de">🇩🇪 Duits</option>
+          </select>
+          <button class="btn btn-ai btn-sm" onclick="generateAllAI()">✦ Genereer alles met AI</button>
+        </div>
+
+        <div class="export-grid">
+          <!-- Platforms -->
           <div class="panel">
-            <div class="panel-header"><div class="panel-title">Advertentie preview</div><button class="btn btn-ai btn-sm" id="export-ai-btn" onclick="generateExportAI()">✦ Genereer met AI</button></div>
-            <div class="panel-body">
-              <div class="export-tabs">
-                <div class="export-tab active" onclick="switchExportTab(this,'tekst')">Tekst</div>
-                <div class="export-tab" onclick="switchExportTab(this,'specs')">Specs</div>
-                <div class="export-tab" onclick="switchExportTab(this,'prijs')">Prijs</div>
+            <div class="panel-header"><div class="panel-title">Platforms</div></div>
+            <div style="display:flex;flex-direction:column;gap:1px" id="platform-list"></div>
+            <div style="padding:12px 16px;border-top:1px solid var(--border)">
+              <button class="btn btn-primary btn-full btn-sm" onclick="copyAllPlatforms()">⎘ Kopieer voor geselecteerde platforms</button>
+            </div>
+          </div>
+
+          <!-- Builder -->
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <!-- Titel -->
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title">Advertentietitel</div>
+                <button class="btn btn-ghost btn-sm" onclick="copyField('export-title')">⎘</button>
               </div>
-              <div id="export-tab-tekst">
-                <div class="export-field"><label>Titel</label><input type="text" id="export-title" value=""></div>
-                <div class="export-field"><label>Advertentietekst</label><textarea id="export-body" rows="6"></textarea></div>
+              <div class="panel-body"><input type="text" id="export-title" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:13px"></div>
+            </div>
+
+            <!-- Tekst -->
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title">Advertentietekst</div>
+                <div style="display:flex;gap:6px">
+                  <button class="btn btn-ai btn-sm" id="export-ai-btn" onclick="generateExportAI()">✦ AI</button>
+                  <button class="btn btn-ghost btn-sm" onclick="copyField('export-body')">⎘</button>
+                </div>
               </div>
-              <div id="export-tab-specs" style="display:none"><div id="export-specs-content" style="font-size:13px;color:var(--text);line-height:2"></div></div>
-              <div id="export-tab-prijs" style="display:none"><div id="export-prijs-content"></div></div>
-              <div style="display:flex;gap:7px;margin-top:14px;flex-wrap:wrap">
-                <button class="btn btn-primary btn-sm" onclick="exportToClipboard()">⎘ Kopiëren</button>
-                <button class="btn btn-ghost btn-sm">↗ Marktplaats</button>
-                <button class="btn btn-ghost btn-sm">↗ AutoTrack</button>
-                <button class="btn btn-ghost btn-sm">↗ AutoScout24</button>
+              <div class="panel-body"><textarea id="export-body" rows="7" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:13px;resize:vertical;font-family:'DM Sans',sans-serif;line-height:1.6"></textarea></div>
+            </div>
+
+            <!-- Specs -->
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title">Specificaties</div>
+                <button class="btn btn-ghost btn-sm" onclick="copySpecs()">⎘ Kopieer specs</button>
               </div>
+              <div class="panel-body" id="export-specs-content"></div>
+            </div>
+
+            <!-- Foto selectie -->
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title">Foto selectie</div><div class="panel-meta" id="export-foto-count"></div></div>
+              <div id="export-fotos" style="display:flex;flex-wrap:wrap;gap:8px;padding:14px"></div>
+            </div>
+
+            <!-- HTML blok eigen website -->
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title">HTML blok — eigen website</div>
+                <button class="btn btn-ghost btn-sm" onclick="copyField('export-html')">⎘ Kopieer HTML</button>
+              </div>
+              <div class="panel-body"><textarea id="export-html" rows="5" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:4px;font-size:11px;resize:vertical;font-family:monospace" readonly></textarea></div>
             </div>
           </div>
         </div>
@@ -2675,37 +2735,132 @@ function drawBarChart(canvasId, labels, data, color, prefix) {
 function renderExport() {
   const cars = appState.cars.filter(c=>c.status!=='Verkocht');
   el('export-car-select').innerHTML = cars.length
-    ? cars.map(c=>`<option value="${c.id}">${c.make} ${c.model}${c.kenteken?' ('+c.kenteken+')':''}</option>`).join('')
-    : `<option value="">Geen voertuigen beschikbaar</option>`;
-  el('platform-list').innerHTML = platforms.map(p=>`
-    <div class="platform-card ${p.id===selectedPlatform?'selected':''}" onclick="selectPlatform('${p.id}',this)">
-      <span class="platform-check">✓</span>
-      <div style="display:flex;align-items:center;gap:10px"><div style="font-size:22px">${p.icon}</div><div><div class="platform-name">${p.name}</div><div class="platform-desc">${p.desc}</div></div></div>
-    </div>`).join('');
+    ? cars.map(c=>'<option value="'+c.id+'">'+c.make+' '+c.model+(c.kenteken?' ('+c.kenteken+')':'')+'</option>').join('')
+    : '<option value="">Geen voertuigen beschikbaar</option>';
+  renderPlatforms();
   if (cars.length) updateExport();
 }
 
-function selectPlatform(id,e) {
-  selectedPlatform=id;
-  document.querySelectorAll('.platform-card').forEach(c=>c.classList.remove('selected'));
-  e.classList.add('selected'); updateExport();
+const PLATFORMS = [
+  { id:'marktplaats', naam:'Marktplaats',  icon:'🟠', desc:'Grootste platform NL', url:'https://www.marktplaats.nl/syi/auto' },
+  { id:'autotrack',   naam:'AutoTrack',    icon:'🔵', desc:'Zakelijk platform',    url:'https://www.autotrack.nl' },
+  { id:'autoscout',   naam:'AutoScout24',  icon:'🟢', desc:'Europees platform',    url:'https://www.autoscout24.nl' },
+  { id:'gaspedaal',   naam:'Gaspedaal',    icon:'⚡', desc:'Vergelijkingssite',    url:'https://www.gaspedaal.nl' },
+  { id:'autowereld',  naam:'Autowereld',   icon:'🌍', desc:'Marktplaats platform', url:'https://www.autowereld.com' },
+  { id:'website',     naam:'Eigen website',icon:'🌐', desc:'HTML blok kopiëren',   url:null },
+];
+
+let selectedPlatforms = new Set(['marktplaats','autotrack']);
+
+function renderPlatforms() {
+  el('platform-list').innerHTML = PLATFORMS.map(function(p) {
+    const sel = selectedPlatforms.has(p.id);
+    return '<div class="platform-row'+(sel?' selected':'')+'" data-pid="'+p.id+'" onclick="togglePlatform(this.dataset.pid,this)">'
+      + '<div class="platform-check-box">'+(sel?'✓':'')+'</div>'
+      + '<div class="platform-icon">'+p.icon+'</div>'
+      + '<div style="flex:1"><div class="platform-name">'+p.naam+'</div><div class="platform-desc">'+p.desc+'</div></div>'
+      + (p.url ? '<a href="'+p.url+'" target="_blank" class="btn btn-ghost btn-sm" onclick="event.stopPropagation()" style="font-size:10px">↗</a>' : '')
+      + '</div>';
+  }).join('');
+}
+
+function togglePlatform(id, el_) {
+  if (selectedPlatforms.has(id)) selectedPlatforms.delete(id);
+  else selectedPlatforms.add(id);
+  el_.classList.toggle('selected');
+  el_.querySelector('.platform-check-box').textContent = selectedPlatforms.has(id) ? '✓' : '';
 }
 
 function updateExport() {
   const id = el('export-car-select').value;
-  const c = appState.cars.find(x=>x.id===id) || appState.cars[0];
+  const c  = appState.cars.find(x=>x.id===id) || appState.cars.find(x=>x.status!=='Verkocht');
   if (!c) return;
-  el('export-title').value = `${c.make} ${c.model} ${c.year} — ${fmt(c.km)} km — ${c.fuel}`;
-  el('export-body').value = `Te koop: ${c.make} ${c.model} (${c.year})\n\nDeze ${(c.color||'').toLowerCase()} ${c.make} ${c.model} is in uitstekende staat.\n\nSpecificaties:\n• Bouwjaar: ${c.year}\n• Kilometerstand: ${fmt(c.km)} km\n• Brandstof: ${c.fuel}\n• Transmissie: ${c.transmission}\n${c.color?'• Kleur: '+c.color+'\n':''}${c.kenteken?'• Kenteken: '+c.kenteken+'\n':''}\nPrijs: ${fmtEur(c.price)} (excl. BTW)\n\nVoor meer informatie of een proefrit, neem gerust contact op!`;
-  const specRows = [['Merk',c.make],['Model',c.model],['Bouwjaar',c.year],['KM-stand',fmt(c.km)+' km'],['Brandstof',c.fuel],['Transmissie',c.transmission],['Kleur',c.color||'—'],['Kenteken',c.kenteken||'—'],['Vraagprijs',fmtEur(c.price)]];
-  el('export-specs-content').innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0">' + specRows.map(function([k,v]){ return '<div style="padding:7px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3);font-family:monospace;font-size:10px;text-transform:uppercase">'+k+'</span><br><strong style="color:var(--text)">'+v+'</strong></div>'; }).join('') + '</div>';
-  el('export-prijs-content').innerHTML = `<div style="display:flex;flex-direction:column;gap:10px"><div style="padding:14px;background:var(--surface2);border:1px solid var(--border)"><div style="font-family:monospace;font-size:10px;color:var(--text3);margin-bottom:4px">VRAAGPRIJS</div><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:24px;color:var(--accent)">${fmtEur(c.price)}</div><div style="font-size:11px;color:var(--text2)">excl. BTW</div></div><div style="padding:14px;background:var(--surface2);border:1px solid var(--border)"><div style="font-family:monospace;font-size:10px;color:var(--text3);margin-bottom:4px">BRUTO MARGE</div><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:var(--green)">${fmtEur(marge(c))}</div><div style="font-size:11px;color:var(--text2)">${margePct(c)}% op inkoopprijs</div></div></div>`;
+  const lang = el('export-lang')?.value || 'nl';
+
+  // Titel
+  el('export-title').value = c.make+' '+c.model+' '+c.year+' — '+fmt(c.km)+' km — '+c.fuel;
+
+  // Standaard tekst per taal
+  const texts = {
+    nl: 'Te koop: '+c.make+' '+c.model+' ('+c.year+')\n\nDeze '+((c.color||'').toLowerCase()||'nette')+' '+c.make+' '+c.model+' is in uitstekende staat en rijklaar.\n\nSpecificaties:\n• Bouwjaar: '+c.year+'\n• Kilometerstand: '+fmt(c.km)+' km\n• Brandstof: '+c.fuel+'\n• Transmissie: '+c.transmission+'\n'+(c.color?'• Kleur: '+c.color+'\n':'')+(c.kenteken?'• Kenteken: '+c.kenteken+'\n':'')+'\nVraagprijs: '+fmtEur(c.price)+' (excl. BTW)\n\nVoor meer informatie of een proefrit, bel of mail ons gerust!',
+    en: 'For sale: '+c.make+' '+c.model+' ('+c.year+')\n\nThis '+((c.color||'').toLowerCase()||'well-maintained')+' '+c.make+' '+c.model+' is in excellent condition and ready to drive.\n\nSpecifications:\n• Year: '+c.year+'\n• Mileage: '+fmt(c.km)+' km\n• Fuel: '+c.fuel+'\n• Transmission: '+c.transmission+'\n\nAsking price: '+fmtEur(c.price)+' (excl. VAT)\n\nContact us for more information or a test drive!',
+    de: 'Zu verkaufen: '+c.make+' '+c.model+' ('+c.year+')\n\nDieses '+((c.color||'').toLowerCase()||'gepflegte')+' '+c.make+' '+c.model+' befindet sich in ausgezeichnetem Zustand.\n\nSpezifikationen:\n• Baujahr: '+c.year+'\n• Kilometerstand: '+fmt(c.km)+' km\n• Kraftstoff: '+c.fuel+'\n• Getriebe: '+c.transmission+'\n\nPreis: '+fmtEur(c.price)+' (zzgl. MwSt.)\n\nFür weitere Informationen oder eine Probefahrt kontaktieren Sie uns!'
+  };
+  el('export-body').value = texts[lang] || texts.nl;
+
+  // Specs tabel
+  const specRows = [
+    ['Merk / Make',c.make],['Model',c.model],['Bouwjaar / Year',c.year],
+    ['KM-stand',fmt(c.km)+' km'],['Brandstof / Fuel',c.fuel],['Transmissie',c.transmission],
+    ['Kleur / Color',c.color||'—'],['Kenteken',c.kenteken||'—'],['Vraagprijs',fmtEur(c.price)]
+  ];
+  el('export-specs-content').innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0">'
+    + specRows.map(function(r){ return '<div style="padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3);font-size:10px;font-family:monospace;text-transform:uppercase">'+r[0]+'</span><br><strong style="color:var(--text);font-size:13px">'+r[1]+'</strong></div>'; }).join('')
+    + '</div>';
+
+  // Foto's
+  const fotos = (c.car_images||[]).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  appState.exportSelectedFotos = fotos.slice(0,6).map(f=>f.url);
+  el('export-foto-count').textContent = appState.exportSelectedFotos.length+' geselecteerd';
+  el('export-fotos').innerHTML = fotos.length
+    ? fotos.map(function(f,i) {
+        const sel = i < 6;
+        return '<div class="export-foto-thumb'+(sel?' selected':'')+'" data-url="'+f.url+'" data-idx="'+(i+1)+'" onclick="toggleExportFoto(this)">'
+          + '<img src="'+f.url+'" loading="lazy">'
+          + '<div class="foto-num">'+(sel?appState.exportSelectedFotos.indexOf(f.url)+1:'')+'</div>'
+          + '</div>';
+      }).join('')
+    : '<div style="color:var(--text3);font-size:12px;padding:8px">Geen fotos beschikbaar</div>';
+
+  // HTML blok voor eigen website
+  const fotosHtml = appState.exportSelectedFotos.slice(0,3).map(u=>'  <img src="'+u+'" alt="'+c.make+' '+c.model+'" style="width:100%;max-width:400px;border-radius:8px">').join('\n');
+  el('export-html').value = '<!-- '+c.make+' '+c.model+' '+c.year+' -->\n<div class="auto-advertentie" style="font-family:sans-serif;max-width:600px">\n  <h2>'+c.make+' '+c.model+' '+c.year+'</h2>\n  <p><strong>Prijs: '+fmtEur(c.price)+'</strong> (excl. BTW)</p>\n  <p>'+fmt(c.km)+' km | '+c.fuel+' | '+c.transmission+(c.color?' | '+c.color:'')+' </p>\n'+fotosHtml+'\n  <p>'+el('export-body').value.slice(0,200)+'...</p>\n</div>';
+}
+
+function toggleExportFoto(div) {
+  const url = div.dataset.url;
+  if (div.classList.contains('selected')) {
+    appState.exportSelectedFotos = appState.exportSelectedFotos.filter(u=>u!==url);
+    div.classList.remove('selected');
+    div.querySelector('.foto-num').textContent = '';
+  } else {
+    appState.exportSelectedFotos.push(url);
+    div.classList.add('selected');
+    div.querySelector('.foto-num').textContent = appState.exportSelectedFotos.length;
+  }
+  el('export-foto-count').textContent = appState.exportSelectedFotos.length+' geselecteerd';
+}
+
+function copyField(id) {
+  const el_ = el(id);
+  if (!el_) return;
+  navigator.clipboard.writeText(el_.value).then(function() {
+    toast('✓ Gekopieerd!');
+  });
+}
+
+function copySpecs() {
+  const rows = document.querySelectorAll('#export-specs-content > div > div');
+  let txt = '';
+  rows.forEach(function(r) { txt += r.querySelector('span')?.textContent + ': ' + r.querySelector('strong')?.textContent + '\n'; });
+  navigator.clipboard.writeText(txt).then(function() { toast('✓ Specs gekopieerd!'); });
+}
+
+function copyAllPlatforms() {
+  const title = el('export-title').value;
+  const body  = el('export-body').value;
+  const txt = title + '\n\n' + body;
+
+  navigator.clipboard.writeText(txt).then(function() {
+    toast('✓ Advertentie gekopieerd voor '+selectedPlatforms.size+' platform'+(selectedPlatforms.size!==1?'s':'')+'!');
+  });
 }
 
 function switchExportTab(e,tab) {
   document.querySelectorAll('.export-tab').forEach(t=>t.classList.remove('active')); e.classList.add('active');
-  ['tekst','specs','prijs'].forEach(t=>el('export-tab-'+t).style.display=t===tab?'block':'none');
+  ['tekst','specs','prijs'].forEach(t=>{ const x=el('export-tab-'+t); if(x) x.style.display=t===tab?'block':'none'; });
 }
+
 function exportToClipboard() {
   const txt = el('export-title').value + '\n\n' + el('export-body').value;
   navigator.clipboard.writeText(txt).then(()=>{
@@ -2713,18 +2868,74 @@ function exportToClipboard() {
   });
 }
 
+// ─── XML datafeed ───
+function exportXML() {
+  const cars = appState.cars.filter(c=>c.status!=='Verkocht');
+  const nl = '\n';
+  let xml = '<?xml version="1.0" encoding="UTF-8"?>' + nl + '<voertuigen>' + nl;
+  cars.forEach(function(c) {
+    const fotos = (c.car_images||[]).map(f=>'    <foto>'+f.url+'</foto>').join(nl);
+    xml += '  <voertuig>' + nl
+      + '    <id>'+c.id+'</id>' + nl
+      + '    <merk>'+c.make+'</merk>' + nl
+      + '    <model>'+c.model+'</model>' + nl
+      + '    <bouwjaar>'+c.year+'</bouwjaar>' + nl
+      + '    <km>'+c.km+'</km>' + nl
+      + '    <prijs>'+c.price+'</prijs>' + nl
+      + '    <brandstof>'+c.fuel+'</brandstof>' + nl
+      + '    <transmissie>'+c.transmission+'</transmissie>' + nl
+      + '    <kleur>'+(c.color||'')+'</kleur>' + nl
+      + '    <kenteken>'+(c.kenteken||'')+'</kenteken>' + nl
+      + '    <status>'+c.status+'</status>' + nl
+      + (fotos ? fotos + nl : '')
+      + '  </voertuig>' + nl;
+  });
+  xml += '</voertuigen>';
+  downloadFile('voertuigen-feed.xml', xml, 'application/xml');
+  toast('\u2713 XML datafeed gedownload ('+cars.length+' voertuigen)');
+}
+// ─── CSV datafeed ───
+function exportCSV() {
+  const cars = appState.cars.filter(c=>c.status!=='Verkocht');
+  const headers = ['ID','Merk','Model','Bouwjaar','KM','Prijs','Inkoop','Brandstof','Transmissie','Kleur','Kenteken','Status','Foto 1','Foto 2','Foto 3'];
+  const rows = cars.map(function(c) {
+    const fotos = (c.car_images||[]).map(f=>f.url);
+    return [c.id,c.make,c.model,c.year,c.km,c.price,c.inkoop_price||0,c.fuel,c.transmission,c.color||'',c.kenteken||'',c.status,fotos[0]||'',fotos[1]||'',fotos[2]||'']
+      .map(v=>'"'+(v+'').replace(/"/g,'""')+'"').join(',');
+  });
+  const csv = headers.join(',') + '\n' + rows.join('\n');
+  downloadFile('voertuigen-feed.csv', csv, 'text/csv');
+  toast('✓ CSV datafeed gedownload ('+cars.length+' voertuigen)');
+}
+
+function downloadFile(naam, inhoud, type) {
+  const blob = new Blob([inhoud], { type: type });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = naam; a.click();
+  URL.revokeObjectURL(url);
+}
+
 async function generateExportAI() {
   const id = el('export-car-select').value;
-  const c = appState.cars.find(x=>x.id===id) || appState.cars[0];
+  const c  = appState.cars.find(x=>x.id===id) || appState.cars.find(x=>x.status!=='Verkocht');
   if (!c) return;
-  const btn=el('export-ai-btn'); btn.textContent='✦ Bezig…'; btn.disabled=true;
+  const lang = el('export-lang')?.value || 'nl';
+  const langLabels = { nl:'Nederlands', en:'Engels', de:'Duits' };
+  const btn = el('export-ai-btn'); btn.textContent='\u2736 Bezig\u2026'; btn.disabled=true;
+  const prompt = 'Schrijf een professionele advertentietekst in het '+langLabels[lang]+' voor een autodealer:\n\nMerk: '+c.make+', Model: '+c.model+', Jaar: '+c.year+', KM: '+fmt(c.km)+', Brandstof: '+c.fuel+', Transmissie: '+c.transmission+', Kleur: '+(c.color||'onbekend')+', Prijs: '+fmtEur(c.price)+'\n\nMax 150 woorden. Aantrekkelijk en overtuigend. Eindig met call-to-action.';
   try {
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`Schrijf een professionele advertentietekst in het Nederlands voor een autodealer:\n\nMerk: ${c.make}, Model: ${c.model}, Jaar: ${c.year}, KM: ${fmt(c.km)}, Brandstof: ${c.fuel}, Transmissie: ${c.transmission}, Kleur: ${c.color||'onbekend'}, Prijs: ${fmtEur(c.price)}\n\nMax 150 woorden. Aantrekkelijk en overtuigend. Eindig met call-to-action.`}]})});
-    const data=await resp.json();
-    el('export-body').value=data.content?.map(b=>b.text||'').join('')||'Fout bij genereren.';
-  } catch(e) { el('export-body').value='Verbindingsfout.'; }
-  btn.textContent='✦ Genereer met AI'; btn.disabled=false;
+    const resp = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    const data = await resp.json();
+    el('export-body').value = data.content?.map(b=>b.text||'').join('') || 'Fout bij genereren.';
+  } catch(e) { el('export-body').value = 'Verbindingsfout.'; }
+  btn.textContent='\u2736 AI'; btn.disabled=false;
 }
+async function generateAllAI() {
+  await generateExportAI();
+  toast('✓ Advertentietekst gegenereerd');
+}
+
 
 /* ══════════════════════════════════════════
    AI — live data
